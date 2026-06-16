@@ -1,0 +1,16 @@
+# R CMD check output
+genhaz.Rcheck/
+
+# Built tarball
+*.tar.gz
+
+# R session files
+.Rhistory
+.RData
+
+# Source files not part of the package
+genhaz/src/*.o
+genhaz/src/*.dll
+genhaz/src/*.so
+genhaz/src/symbols.rds
+genhaz/src/tmp.def

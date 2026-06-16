@@ -1,0 +1,28 @@
+Package: genhaz
+Title: General Hazard Models for Survival Analysis
+Version: 0.1.0
+Authors@R:
+    person("Aaron", "Jehle", email = "aaron.jehle@mail.de", role = c("aut", "cre"))
+    person("Mark", "Clements", email = "mark.clements@ki.se", role = c("aut"))
+Description: Fits penalized cubic spline generalized hazards (GH) models
+    for survival data, encompassing proportional hazards (PH), accelerated failure
+    time (AFT), additive hazards (AH), and the full GH specification. Smoothing parameter selection via a modified leave-one-out cross-validation (LCV)
+    criterion. Also provides mixture Weibull utilities for data generation and
+    simulation studies.
+License: file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    pracma,
+    Rcpp (>= 1.0.0),
+    survival
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
+Suggests:
+    biostat3,
+    rstpm2,
+    survPen,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
