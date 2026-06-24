@@ -8,7 +8,8 @@
   object,
   newdata,
   times,
-  type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff"),
+  type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
+    "hazard_ratio", "time_ratio"),
   alpha = 0.05,
   ...
 )
@@ -27,8 +28,9 @@ is evaluated.}
 
 \item{type}{Quantity to predict: \code{"hazard"} (default), \code{"survival"},
 \code{"cumhaz"} (cumulative hazard), \code{"rmst"} (restricted mean survival time),
-\code{"surv_diff"} (survival difference between two groups), or \code{"rmst_diff"}
-(RMST difference between two groups).}
+\code{"surv_diff"} (survival difference S1−S2), \code{"rmst_diff"} (RMST
+difference), \code{"hazard_ratio"} (h1/h2), or \code{"time_ratio"} (tau/t where
+S2(tau) = S1(t)). The last four require exactly two rows in \code{newdata}.}
 
 \item{alpha}{Significance level for confidence intervals. Default 0.05.}
 
@@ -55,5 +57,7 @@ predict(fit, newdata = nd, times = t_grid, type = "survival")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
 predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
+predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
+predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
 }
 }

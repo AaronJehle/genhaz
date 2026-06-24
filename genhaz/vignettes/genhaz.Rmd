@@ -177,6 +177,33 @@ rmst_diff <- predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")
 rmst_diff
 ```
 
+`type = "hazard_ratio"` gives h1(t)/h2(t) — time-varying since the model is
+GH (it would be constant under PH). The CI is on the log scale.
+
+```{r predict-hazard-ratio}
+hr <- predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
+plot(hr$time, hr$estimate, type = "l",
+     xlab = "Time", ylab = "Hazard ratio",
+     main = "h(t | X=0) / h(t | X=1)")
+lines(hr$time, hr$lower, lty = 2, col = "grey50")
+lines(hr$time, hr$upper, lty = 2, col = "grey50")
+abline(h = 1, lty = 3, col = "grey70")
+```
+
+`type = "time_ratio"` gives TR(t) = tau/t where S2(tau) = S1(t): for each
+time t, how many multiples of t does group 2 need to reach the same survival
+level. Computed via `uniroot` per time point with a delta-method CI.
+
+```{r predict-time-ratio}
+tr <- predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
+plot(tr$time, tr$estimate, type = "l",
+     xlab = "Time", ylab = "Time ratio",
+     main = "Time ratio: tau/t where S(tau | X=1) = S(t | X=0)")
+lines(tr$time, tr$lower, lty = 2, col = "grey50")
+lines(tr$time, tr$upper, lty = 2, col = "grey50")
+abline(h = 1, lty = 3, col = "grey70")
+```
+
 ---
 
 ## Plotting

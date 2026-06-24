@@ -182,8 +182,9 @@ print.summary.genhaz_fit <- function(x, digits = 4, ...) {
 #'   is evaluated.
 #' @param type Quantity to predict: `"hazard"` (default), `"survival"`,
 #'   `"cumhaz"` (cumulative hazard), `"rmst"` (restricted mean survival time),
-#'   `"surv_diff"` (survival difference between two groups), or `"rmst_diff"`
-#'   (RMST difference between two groups).
+#'   `"surv_diff"` (survival difference S1−S2), `"rmst_diff"` (RMST
+#'   difference), `"hazard_ratio"` (h1/h2), or `"time_ratio"` (tau/t where
+#'   S2(tau) = S1(t)). The last four require exactly two rows in `newdata`.
 #' @param alpha Significance level for confidence intervals. Default 0.05.
 #' @param ... Currently unused.
 #'
@@ -203,10 +204,13 @@ print.summary.genhaz_fit <- function(x, digits = 4, ...) {
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
 #' predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
+#' predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
+#' predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
 #' }
 predict.genhaz_fit <- function(object, newdata, times,
                                type  = c("hazard", "survival", "cumhaz",
-                                         "rmst", "surv_diff", "rmst_diff"),
+                                         "rmst", "surv_diff", "rmst_diff",
+                                         "hazard_ratio", "time_ratio"),
                                alpha = 0.05, ...) {
   fit       <- object
   type      <- match.arg(type)
@@ -215,8 +219,8 @@ predict.genhaz_fit <- function(object, newdata, times,
   var_theta <- fit$var
   z         <- qnorm(1 - alpha / 2)
 
-  # ---- two-group difference types ------------------------------------------
-  if (type %in% c("surv_diff", "rmst_diff")) {
+  # ---- two-group comparison types ------------------------------------------
+  if (type %in% c("surv_diff", "rmst_diff", "hazard_ratio", "time_ratio")) {
     if (nrow(X_mat) != 2L)
       stop("'newdata' must have exactly 2 rows for type '", type, "'.")
     pat_label <- paste0(patterns[1L], " - ", patterns[2L])
@@ -225,11 +229,10 @@ predict.genhaz_fit <- function(object, newdata, times,
       xi1 <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
       xi2 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
 
-      S1       <- exp(-post(fit, xi1, times, "H"))
-      S2       <- exp(-post(fit, xi2, times, "H"))
-      grad_H1  <- post(fit, xi1, times, "gradient_H")
-      grad_H2  <- post(fit, xi2, times, "gradient_H")
-
+      S1        <- exp(-post(fit, xi1, times, "H"))
+      S2        <- exp(-post(fit, xi2, times, "H"))
+      grad_H1   <- post(fit, xi1, times, "gradient_H")
+      grad_H2   <- post(fit, xi2, times, "gradient_H")
       diff_val  <- S1 - S2
       # grad of (S1 - S2) w.r.t. theta: -S1*grad_H1 + S2*grad_H2 (row-wise)
       grad_diff <- -S1 * grad_H1 + S2 * grad_H2
@@ -240,34 +243,88 @@ predict.genhaz_fit <- function(object, newdata, times,
                         lower    = diff_val - z * sqrt(var_diff),
                         upper    = diff_val + z * sqrt(var_diff),
                         stringsAsFactors = FALSE))
+
+    } else if (type == "rmst_diff") {
+      gl  <- gauss_legendre(25L)
+      out <- t(vapply(times, function(tau) {
+        t_q   <- tau * (gl$x + 1) / 2
+        w_q   <- tau / 2 * gl$w
+        xi1_q <- matrix(rep(X_mat[1L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
+        xi2_q <- matrix(rep(X_mat[2L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
+
+        S1_q      <- exp(-post(fit, xi1_q, t_q, "H"))
+        S2_q      <- exp(-post(fit, xi2_q, t_q, "H"))
+        grad_H1_q <- post(fit, xi1_q, t_q, "gradient_H")
+        grad_H2_q <- post(fit, xi2_q, t_q, "gradient_H")
+
+        diff_val  <- sum(w_q * S1_q) - sum(w_q * S2_q)
+        grad_diff <- colSums(-w_q * S1_q * grad_H1_q) -
+                     colSums(-w_q * S2_q * grad_H2_q)
+        var_diff  <- as.numeric(crossprod(grad_diff, var_theta %*% grad_diff))
+        c(diff_val, diff_val - z * sqrt(var_diff), diff_val + z * sqrt(var_diff))
+      }, numeric(3)))
+
+      return(data.frame(pattern  = pat_label, time = times,
+                        estimate = out[, 1L],
+                        lower    = out[, 2L],
+                        upper    = out[, 3L],
+                        stringsAsFactors = FALSE))
+
+    } else if (type == "hazard_ratio") {
+      xi1 <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+      xi2 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+
+      h1      <- post(fit, xi1, times, "h")
+      h2      <- post(fit, xi2, times, "h")
+      grad_h1 <- post(fit, xi1, times, "gradient_h")
+      grad_h2 <- post(fit, xi2, times, "gradient_h")
+
+      HR         <- h1 / h2
+      grad_logHR <- grad_h1 / h1 - grad_h2 / h2   # row-wise: each row scaled by scalar
+      var_logHR  <- rowSums((grad_logHR %*% var_theta) * grad_logHR)
+
+      return(data.frame(pattern  = pat_label, time = times,
+                        estimate = HR,
+                        lower    = exp(log(HR) - z * sqrt(var_logHR)),
+                        upper    = exp(log(HR) + z * sqrt(var_logHR)),
+                        stringsAsFactors = FALSE))
+
+    } else {
+      # time_ratio: TR(t) = tau/t where H2(tau) = H1(t), i.e. S2(tau) = S1(t).
+      # Delta method via implicit function theorem:
+      #   grad(log TR) = (grad_H1(t) - grad_H2(tau)) / (tau * h2(tau))
+      xi1     <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+      H1      <- post(fit, xi1, times, "H")
+      grad_H1 <- post(fit, xi1, times, "gradient_H")
+      t_upper <- max(times) * 20
+
+      out <- t(vapply(seq_along(times), function(j) {
+        target <- H1[j]
+        tau_j  <- tryCatch(
+          uniroot(function(tau_try) {
+            post(fit, matrix(X_mat[2L, ], nrow = 1L), tau_try, "H") - target
+          }, lower = 1e-8, upper = t_upper, tol = 1e-8)$root,
+          error = function(e) NA_real_
+        )
+        if (is.na(tau_j)) return(c(NA_real_, NA_real_, NA_real_))
+
+        xi2_tau     <- matrix(X_mat[2L, ], nrow = 1L)
+        h2_tau      <- post(fit, xi2_tau, tau_j, "h")
+        grad_H2_tau <- post(fit, xi2_tau, tau_j, "gradient_H")
+
+        grad_logTR <- (grad_H1[j, ] - grad_H2_tau[1L, ]) / (tau_j * h2_tau)
+        var_logTR  <- as.numeric(crossprod(grad_logTR, var_theta %*% grad_logTR))
+        TR_j       <- tau_j / times[j]
+        c(TR_j, exp(log(TR_j) - z * sqrt(var_logTR)),
+                exp(log(TR_j) + z * sqrt(var_logTR)))
+      }, numeric(3)))
+
+      return(data.frame(pattern  = pat_label, time = times,
+                        estimate = out[, 1L],
+                        lower    = out[, 2L],
+                        upper    = out[, 3L],
+                        stringsAsFactors = FALSE))
     }
-
-    # rmst_diff
-    gl  <- gauss_legendre(25L)
-    out <- t(vapply(times, function(tau) {
-      t_q   <- tau * (gl$x + 1) / 2
-      w_q   <- tau / 2 * gl$w
-      xi1_q <- matrix(rep(X_mat[1L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
-      xi2_q <- matrix(rep(X_mat[2L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
-
-      S1_q      <- exp(-post(fit, xi1_q, t_q, "H"))
-      S2_q      <- exp(-post(fit, xi2_q, t_q, "H"))
-      grad_H1_q <- post(fit, xi1_q, t_q, "gradient_H")
-      grad_H2_q <- post(fit, xi2_q, t_q, "gradient_H")
-
-      diff_val  <- sum(w_q * S1_q) - sum(w_q * S2_q)
-      grad_diff <- colSums(-w_q * S1_q * grad_H1_q) -
-                   colSums(-w_q * S2_q * grad_H2_q)
-      var_diff  <- as.numeric(crossprod(grad_diff, var_theta %*% grad_diff))
-
-      c(diff_val, diff_val - z * sqrt(var_diff), diff_val + z * sqrt(var_diff))
-    }, numeric(3)))
-
-    return(data.frame(pattern  = pat_label, time = times,
-                      estimate = out[, 1L],
-                      lower    = out[, 2L],
-                      upper    = out[, 3L],
-                      stringsAsFactors = FALSE))
   }
 
   # ---- per-pattern types ---------------------------------------------------
