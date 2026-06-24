@@ -54,8 +54,6 @@ or Xcode command-line tools (macOS).
 |---------|------|
 | `Rcpp` / `RcppArmadillo` | C++ spline implementation |
 | `survival` | `Surv` objects |
-| `pracma` | Gauss-Legendre quadrature |
-| `dplyr` | Knot-placement helper |
 
 Optional: `survPen` (for `lambda_surv = TRUE` or comparison plots),
 `rstpm2` (for `translate_time()`), `biostat3` (melanoma example below).
@@ -94,6 +92,39 @@ plot(ci_unexposed$time, ci_unexposed$h, type = "l", col = "blue",
      xlab = "Time", ylab = "Hazard")
 lines(ci_exposed$time, ci_exposed$h, col = "red")
 legend("topright", c("X = 0", "X = 1"), col = c("blue", "red"), lty = 1)
+```
+
+---
+
+## S3 methods for fitted models
+
+All objects returned by `fit_genhaz()` have class `"genhaz_fit"` and come
+with standard R generics.
+
+**Inspect the fit**
+
+```r
+print(fit)        # model type, lambda, EDF, AIC, coefficient table with Wald CIs
+summary(fit)      # as above plus exponentiated estimates exp(beta1), exp(beta2)
+```
+
+**Predict** hazard, survival, or cumulative hazard over a time grid — one
+row of `newdata` per covariate pattern, row names become group labels:
+
+```r
+nd <- data.frame(X = c(0, 1))
+rownames(nd) <- c("X = 0", "X = 1")
+
+pred <- predict(fit, newdata = nd, times = t_grid, type = "survival")
+# returns a data.frame: pattern | time | estimate | lower | upper
+```
+
+**Plot** with automatic colours and delta-method confidence bands:
+
+```r
+plot(fit, newdata = nd, times = t_grid)                  # hazard (default)
+plot(fit, newdata = nd, times = t_grid, type = "survival")
+plot(fit, newdata = nd, times = t_grid, col = c("steelblue", "firebrick"))
 ```
 
 ---
@@ -185,16 +216,15 @@ where X = (1[period=1985–94], 1[age∈45–59], 1[age∈60–74], 1[age≥75],
 ```r
 library(genhaz)
 library(survival)
-library(dplyr)
 library(biostat3)
 
 set.seed(23234)
 
-mel <- biostat3::melanoma %>%
-  mutate(X      = ifelse(stage == "Localised", 0, 1),
-         event  = ifelse(status == "Dead: cancer", 1, 0),
-         time   = surv_mm,
-         period = ifelse(year8594 == "Diagnosed 75-84", 0, 1))
+mel        <- biostat3::melanoma
+mel$X      <- ifelse(mel$stage == "Localised", 0, 1)
+mel$event  <- ifelse(mel$status == "Dead: cancer", 1, 0)
+mel$time   <- mel$surv_mm
+mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
 
 fit_adj <- fit_genhaz(
   Surv(mel$time, mel$event), ~ X + period + agegrp + sex,
@@ -301,6 +331,10 @@ fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
 | Function | Description |
 |---|---|
 | `fit_genhaz()` | Fit a GH model (high-level interface) |
+| `print(fit)` | Concise model overview with Wald CIs |
+| `summary(fit)` | Full coefficient table with exponentiated estimates |
+| `predict(fit, newdata, times)` | Hazard / survival / cumhaz with delta-method CIs |
+| `plot(fit, newdata, times)` | Multi-group curve plot with confidence bands |
 | `post()` | Evaluate h, H, S and gradients at new (time, X) |
 | `CI()` | Pointwise confidence bands for h, H, S |
 | `waldCI()` | Wald CI for a single parameter |

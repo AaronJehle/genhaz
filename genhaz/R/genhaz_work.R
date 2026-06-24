@@ -1,3 +1,27 @@
+# Package-level cache for Gauss-Legendre nodes/weights, keyed by n.
+# Avoids recomputing inside the many genhaz_work() calls during LCV profiling.
+.gl_cache <- new.env(parent = emptyenv())
+
+# Gauss-Legendre quadrature via the Golub-Welsch algorithm.
+# Returns list(x = nodes, w = weights) on [-1, 1], same format as
+# pracma::gaussLegendre(n, -1, 1). Results are cached by n for the session.
+#' @noRd
+gauss_legendre <- function(n) {
+  key <- as.character(n)
+  if (!exists(key, envir = .gl_cache, inherits = FALSE)) {
+    i   <- seq_len(n - 1L)
+    b   <- i / sqrt(4 * i^2 - 1)
+    J   <- matrix(0, n, n)
+    J[cbind(i,      i + 1L)] <- b
+    J[cbind(i + 1L, i     )] <- b
+    eig <- eigen(J, symmetric = TRUE)
+    assign(key,
+           list(x = eig$values, w = 2 * eig$vectors[1L, ]^2),
+           envir = .gl_cache)
+  }
+  get(key, envir = .gl_cache, inherits = FALSE)
+}
+
 #' General hazard model workhorse
 #'
 #' Calculates various quantities from a general hazard (GH) model depending on
@@ -88,6 +112,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
 
   res        <- match.arg(res)
   lcv_method <- match.arg(lcv_method)
+  # Parameter vector layout: theta = (intercept, beta0[2..nb0], beta1[1..nb1], beta2[1..nb2])
+  # nb0 = number of spline basis coefs including the intercept; nb1 = nb2 = number of covariates.
+  # Total length of theta: nb0 + 2*nb1.
   nb0 <- length(knots)
   nb1 <- (length(theta) - nb0) / 2
   nb2 <- nb1
@@ -120,6 +147,12 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
 
   init   <- theta
 
+  # Sub-model constraints are enforced by zeroing out irrelevant covariate columns.
+  # PH  (beta1 = 0): X1_filtered zeros PH columns; time-shift eta1 = 0 for those.
+  # AFT (beta2 = 0): X2_filtered zeros AFT columns.
+  # AH  (beta1 = -beta2): X3_filtered carries the beta1 contribution to (beta1+beta2)^T x;
+  #   the equality constraint is imposed as a box bound in "fit" and post-processed there.
+  # eta1 = beta1^T x  (log-time shift); eta2 = (beta1+beta2)^T x  (log-hazard shift).
   is_gh  <- ifelse(model_type == "GH",  1, 0)
   is_ph  <- ifelse(model_type == "PH",  1, 0)
   is_aft <- ifelse(model_type == "AFT", 1, 0)
@@ -147,7 +180,11 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     drop(X %*% (beta1 * filter1 + beta2 * filter2))
   }
 
-  cc <- gaussLegendre(nquad, -1, 1)
+  # Gauss-Legendre nodes on [-1,1] mapped to [0,t]: u = t*(x+1)/2, weight factor t/2.
+  # Approximation: integral_0^t h(u) du ~= sum_i (w_i * t/2) * h(t * (x_i+1)/2).
+  # Pre-replicated covariate matrices avoid repeated row-indexing inside the quadrature loops
+  # for gradient_H and hessian_H_sum (used only when n_arg == n_obs).
+  cc <- gauss_legendre(nquad)
   quad_scale  <- (cc$x + 1) / 2
   quad_w_half <- cc$w / 2
   n_obs <- length(time)
@@ -157,6 +194,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   X2f_quad  <- X2_filtered[.rep_quad, , drop = FALSE]
   X3f_quad  <- X3_filtered[.rep_quad, , drop = FALSE]
 
+  # Integrated second-derivative penalty on the spline coefs beta0:
+  #   S_{ij} = integral B''_i(t) B''_j(t) dt  (i,j in 1..nb0, zero for beta1/beta2).
+  # Normalised so tr(S) = nb0 - 1, matching the survPen convention.
   smf_base <- smf_cpp(log(time + 1e-10), knots = knots, Z = Z, intercept = FALSE)
   S_penal_wo_intercept <- attr(smf_base, "pen")
   S_penal_wo_intercept <- S_penal_wo_intercept * (nb0 - 1) /
@@ -169,6 +209,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
 
   B <- function(time_arg, ...) smf_cpp(time_arg, knots = knots, Z = Z, intercept = FALSE, ...)
 
+  # Log-time GH model: log h(t|x) = B(log(t) + eta1)^T beta0 + intercept + eta2
+  # B(.) is the restricted cubic spline basis evaluated on the shifted log-time scale;
+  # theta[1] is the intercept, theta[2:nb0] are the spline coefs.
   log_h <- function(theta, time_arg) {
     beta0 <- theta[2:nb0]
     drop(B(log(time_arg + 1e-10) + eta1(theta)) %*% beta0 + theta[1] + eta2(theta))
@@ -185,6 +228,12 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     Integral
   }
 
+  # Gradient of log h w.r.t. theta: returns (n x p) matrix with column blocks
+  #   intercept: 1
+  #   d/d_beta0: B(log(t) + eta1)
+  #   d/d_beta1: B'(log(t) + eta1)^T beta0 * X1_filtered + X3_filtered
+  #   d/d_beta2: X2_filtered
+  # Derivs.txt "Derivatives of the log-hazard -- log-time formulation".
   gradient_log_h <- function(theta, time_arg) {
     beta0  <- theta[2:nb0]
     e1     <- eta1(theta)
@@ -199,6 +248,10 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     h_fn(theta, time_arg) * gradient_log_h(theta, time_arg)
   }
 
+  # Hessian of log h: (n x p x p) array; per Derivs.txt only two blocks are non-zero:
+  #   (beta0, beta1): B'(log(t) + eta1) * X1_filtered
+  #   (beta1, beta1): B''(log(t) + eta1)^T beta0 * X1f * X1f^T
+  # All other blocks (beta0/beta0, beta0/beta2, beta1/beta2, beta2/beta2) are zero.
   hessian_log_h <- function(theta, time_arg) {
     beta0   <- theta[2:nb0]
     e1      <- eta1(theta)
@@ -227,7 +280,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     hv * (dlogh2 + d2logh)
   }
 
-  # Vectorised cumulative hazard via Gauss-Legendre quadrature
+  # H(t|x) = integral_0^t h(u|x) du, approximated by GL quadrature.
+  # outer(time, quad_scale) expands all n_obs x nquad evaluation points at once;
+  # rowSums collapses back to n_obs values.
   H_fn <- function(theta, time_arg) {
     n_arg   <- length(time_arg)
     t_all_q <- c(outer(time_arg, quad_scale))
@@ -240,6 +295,8 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     rowSums(w_mat_q * matrix(h_all, n_arg, nquad))
   }
 
+  # dH/d_theta = integral_0^t d(h(u|x))/d_theta du  (Leibniz / differentiate under integral).
+  # Loops over quadrature points to keep the (n x p) output in memory.
   gradient_H <- function(theta, time_arg) {
     n_arg  <- length(time_arg)
     beta0  <- theta[2:nb0]
@@ -260,6 +317,8 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     result
   }
 
+  # d2H/d_theta2 = integral_0^t d2(h(u|x))/d_theta2 du  (Leibniz rule).
+  # Returns (n x p x p) array; use hessian_H_sum for the fitting path (avoids the large array).
   hessian_H <- function(theta, time_arg) {
     n_arg   <- length(time_arg)
     N_q     <- n_arg * nquad
@@ -303,7 +362,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     array(result_2d, c(n_arg, p, p))
   }
 
-  # Direct p x p sum of Hessian of H -- avoids the N_q x p x p intermediate array
+  # Memory-efficient variant of hessian_H: accumulates directly into a (p x p) result
+  # by summing over all observations and quadrature points, avoiding the N_q x p x p array.
+  # Used in hessian_negll for "rc" and "lt_rc" -- the common path during model fitting.
   hessian_H_sum <- function(theta, time_arg) {
     n_arg  <- length(time_arg)
     beta0  <- theta[2:nb0]
@@ -335,6 +396,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     result
   }
 
+  # Penalised negative log-likelihood: -l(theta) + lambda/2 * theta^T S theta.
+  # Individual log-lik: delta * log h(t) - H(t)  (right-censoring).
+  # Left-truncation adds H(t_trunc); interval censoring uses log[S(t1) - S(t2)].
   negll <- function(theta, time_arg, penalized = TRUE, ...) {
     logh <- log_h(theta, time_arg)
     H1   <- H_fn(theta, time_arg)
@@ -456,7 +520,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     return(H_fn(theta, time))
   }
 
-  # Effective degrees of freedom
+  # Effective degrees of freedom: edf = tr(H_pen^{-1} * H_unpen) - #{constrained params}.
+  # modvec adds 1 on diagonal for constrained params (beta1=0 for PH; beta2=0 for AFT/AH)
+  # so H_pen + diag(modvec) stays invertible; those positions contribute 0 to the trace.
   edf_fn <- function(theta_lambda, roh) {
     modvec <- c(rep(0, nb0), is_ph, is_aft + is_ah)
     tryCatch({
@@ -470,15 +536,17 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
                             lambda = exp(roh), cens_type = cens_type,
                             model_type = model_type, time2 = time2,
                             res = "hessian_negll_upen", control = control)
-      Trace(solve(H_pen + diag(modvec)) %*% H_upen) - sum(is_not_gh)
+      sum(diag(solve(H_pen + diag(modvec)) %*% H_upen)) - sum(is_not_gh)
     }, error = function(e) {
       message("Error computing edf for roh = ", roh, ": ", conditionMessage(e))
       Inf
     })
   }
 
-  # Analytical gradient of LCV with respect to log(lambda)
-  #previous implementeation ignoring third derivatives of the likelihood
+  # First-order analytical gradient dLCV/d_rho (rho = log lambda) via implicit differentiation.
+  # Uses d(theta_hat)/d_rho = H_pen^{-1} lambda S theta (implicit function theorem).
+  # Ignores the dependence of H_unpen on theta_hat (i.e., treats third-derivative terms as zero).
+  # Select via lcv_method = "approx"; faster than dLCV_full.
   lcv_gradient <- function(fit_lambda, roh) {
     lam    <- exp(roh)
     theta  <- fit_lambda$par
@@ -498,6 +566,9 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     d_unpen + log(n_f) / 2 * d_edf
   }
   
+  # LCV criterion to minimise over rho = log(lambda):
+  #   LCV(rho) = -l_unpen(theta_hat(rho)) + edf(rho) * log(n) / 2
+  # theta_hat is re-optimised at each rho; init is updated in-place to warm-start the next call.
   LCV_fn <- function(roh) {
     lam        <- exp(roh)
     fit_lambda <- tryCatch(
@@ -518,7 +589,7 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     unpen_negll + edf_val * log(length(time)) / 2
   }
   
-  #previous implementeation ignoring third derivatives of the likelihood
+  # Evaluates lcv_gradient (first-order approximation) at current theta for the given rho.
   dLCV_eval <- function(roh) {
     fl <- genhaz_work(theta, time, X, knots, Z,
                       event = event, lambda = exp(roh), res = "fit",
@@ -661,7 +732,10 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     dLCV_full(fl, roh)
   }
 
-  # --- res = "fit" ---
+  # --- res = "fit": optimise theta at fixed lambda, compute SE / edf / AIC / LCV ---
+  # Sub-model constraints: lower = upper = 0 for beta1 (PH) or beta2 (AFT/AH) as box bounds.
+  # AH post-processing sets beta2 <- -beta1 after optimisation.
+  # Returns: par, se, z, p_values, var, edf, AIC, LCV, lambda, knots, Z, S, n, nb0, nb1.
   if (res == "fit") {
     lower <- rep(-Inf, length(theta))
     upper <- rep(Inf, length(theta))

@@ -229,6 +229,7 @@ fit_genhaz <- function(surv, formula, data, n_knots = 8, lambda = 0,
     rownames(fit$hessian) <- colnames(fit$hessian) <- parnames
   }
 
-  class(fit) <- c("genhaz_fit", class(fit))
+  fit$formula <- formula
+  class(fit) <- c("genhaz_fit")
   fit
 }
