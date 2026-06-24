@@ -1,0 +1,336 @@
+---
+title: "Getting started with genhaz"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with genhaz}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  fig.width  = 7,
+  fig.height = 4.5
+)
+```
+
+## Introduction
+
+In survival analysis, covariate effects are typically modelled through one of
+two mechanisms: a multiplicative effect on the hazard (proportional hazards,
+PH) or a multiplicative effect on time (accelerated failure time, AFT).
+**Generalized hazard (GH) models** combine both simultaneously:
+
+$$h(t \mid x) = h_0\!\left(t\,e^{\beta_1^\top x}\right) \cdot e^{(\beta_1+\beta_2)^\top x}$$
+
+This nests PH ($\beta_1 = 0$), AFT ($\beta_2 = 0$), and additive hazards
+(AH, $\beta_1 = -\beta_2$) as special cases. A key advantage: combining the
+time-acceleration parameter $\beta_1$ and the hazard-scaling parameter
+$\beta_2$ can capture time-varying hazard ratios with only two parameters per
+covariate.
+
+`genhaz` fits penalised cubic restricted spline GH models on the log-time
+scale, with the smoothing parameter selected automatically by minimising a
+modified likelihood cross-validation (LCV) criterion.
+
+## Model types
+
+The `model_type` argument selects the sub-model per covariate:
+
+| `model_type` | Constraint | Interpretation |
+|---|---|---|
+| `"GH"` | none | Full generalised hazard |
+| `"PH"` | $\beta_1 = 0$ | Proportional hazards |
+| `"AFT"` | $\beta_2 = 0$ | Accelerated failure time |
+| `"AH"` | $\beta_1 = -\beta_2$ | Additive hazards |
+
+Mixed models are supported via a vector, e.g. `model_type = c("PH", "GH")`
+for two covariates.
+
+## Censoring types
+
+| `Surv` call | Censoring | Internal type |
+|---|---|---|
+| `Surv(time, event)` | Right-censoring | `"rc"` |
+| `Surv(start, stop, event)` | Left-truncation + right-censoring | `"lt_rc"` |
+| `Surv(t1, t2, type="interval2")` | Interval censoring | `"ic"` |
+
+---
+
+## Quick start
+
+We simulate 500 observations from scenario 1 (bathtub-shaped baseline hazard)
+with $\beta_1 = \beta_2 = 0.5$ and fit a GH model with automatic smoothing
+parameter selection.
+
+```{r simulate}
+library(genhaz)
+library(survival)
+
+set.seed(42)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+head(dat)
+```
+
+```{r fit}
+fit <- fit_genhaz(
+  surv       = Surv(dat$time, dat$event),
+  formula    = ~ X,
+  data       = dat,
+  model_type = "GH",
+  profile    = TRUE,
+  n_knots    = 6,
+  tol_LCV    = 0.05,
+  lcv_method = "optimize"
+)
+```
+
+---
+
+## Inspecting the fit
+
+`print()` gives a concise overview: model metadata and a coefficient table
+with Wald confidence intervals.
+
+```{r print}
+print(fit)
+```
+
+`summary()` adds the stored formula, exponentiated estimates, and a full CI
+table. `exp(beta1)` is the time-acceleration factor; `exp(beta2)` is the
+hazard-scaling factor.
+
+```{r summary}
+summary(fit)
+```
+
+The summary object can also be used programmatically:
+
+```{r summary-access}
+s <- summary(fit)
+s$coef_tab
+```
+
+---
+
+## Predictions
+
+`predict()` accepts a `data.frame` of covariate values (one row per group)
+and a time grid, and returns a long `data.frame` with pointwise delta-method
+confidence intervals. Row names of `newdata` become the group labels.
+
+```{r predict}
+t_grid <- seq(0.01, 8, length.out = 200)
+
+nd <- data.frame(X = c(0, 1))
+rownames(nd) <- c("X = 0", "X = 1")
+
+pred_h <- predict(fit, newdata = nd, times = t_grid, type = "hazard")
+head(pred_h)
+```
+
+Survival and cumulative hazard are requested via `type`:
+
+```{r predict-survival}
+pred_s <- predict(fit, newdata = nd, times = t_grid, type = "survival")
+head(pred_s)
+```
+
+---
+
+## Plotting
+
+`plot()` draws all groups as coloured lines with dashed confidence bands.
+Row names of `newdata` appear in the legend.
+
+```{r plot-hazard}
+plot(fit, newdata = nd, times = t_grid)
+```
+
+```{r plot-survival}
+plot(fit, newdata = nd, times = t_grid, type = "survival",
+     col = c("steelblue", "firebrick"))
+```
+
+Pass additional graphical parameters directly through `...`:
+
+```{r plot-custom}
+plot(fit, newdata = nd, times = t_grid, type = "survival",
+     col  = c("steelblue", "firebrick"),
+     main = "Estimated survival — GH model, scenario 1",
+     xlab = "Time (years)",
+     ci   = FALSE)
+```
+
+---
+
+## Inference
+
+### Wald confidence intervals
+
+`waldCI()` computes a Wald CI for a single parameter; `waldCI_minus()`
+provides a CI for the difference $\beta_1 - \beta_2$ (accounting for their
+covariance via the delta method).
+
+```{r waldci}
+waldCI(fit, "beta1_X")
+waldCI(fit, "beta2_X")
+waldCI_minus(fit, "beta1_X", "beta2_X")
+```
+
+### Likelihood ratio test
+
+Fit a restricted (PH) model and test against the full GH model:
+
+```{r lr-test}
+fit_ph <- fit_genhaz(
+  surv       = Surv(dat$time, dat$event),
+  formula    = ~ X,
+  data       = dat,
+  model_type = "PH",
+  profile    = TRUE,
+  n_knots    = 6,
+  tol_LCV    = 0.05,
+  lcv_method = "optimize"
+)
+
+LR(fit_ph, fit)
+```
+
+---
+
+## Real-data example: melanoma survival
+
+We use the `biostat3::melanoma` dataset: 7,775 patients with melanoma cancer,
+including age group, period of diagnosis, sex, cancer stage, survival time in
+months, and a death indicator. The question of interest is the effect of
+non-localised stage on survival, adjusted for age, period, and sex.
+
+### Data preparation
+
+```{r melanoma-data, message=FALSE, eval=FALSE}
+library(biostat3)
+
+mel        <- biostat3::melanoma
+mel$X      <- ifelse(mel$stage == "Localised", 0, 1)
+mel$event  <- ifelse(mel$status == "Dead: cancer", 1, 0)
+mel$time   <- mel$surv_mm
+mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
+```
+
+### Fitting the model
+
+The full model fit takes approximately ~9 min and is not re-run here.
+The code below shows exactly what was run to produce the stored result:
+
+```{r melanoma-fit, eval=FALSE}
+fit_melanoma <- fit_genhaz(
+  Surv(mel$time, mel$event), ~ X + period + agegrp + sex,
+  data       = mel,
+  model_type = "GH",
+  profile    = TRUE,
+  n_knots    = 8,
+  tol_LCV    = 0.001,
+  lcv_method = "optimize"
+)
+```
+
+```{r melanoma-load}
+data("fit_melanoma")
+```
+
+### Results
+
+```{r melanoma-print}
+print(fit_melanoma)
+```
+
+```{r melanoma-summary}
+summary(fit_melanoma)
+```
+
+Patients with non-localised disease progress through the baseline hazard
+$\exp(\hat\beta_1)$ times faster and face a $\exp(\hat\beta_2)$ times higher
+hazard at every time point. Wald CIs for each:
+
+```{r melanoma-waldci}
+waldCI(fit_melanoma, "beta1_X")
+waldCI(fit_melanoma, "beta2_X")
+```
+
+### Hazard and survival curves
+
+We evaluate at age group 60–74, male sex, diagnosed 1985–94 (the adjusted
+covariate vector in design-matrix order: X, period, agegrp60-74, sex Male).
+
+```{r melanoma-ci}
+new_time <- seq(0, 320, by = 0.5)
+
+CIs_loc     <- CI(fit_melanoma, new_time, c(0, 1, 0, 1, 0, 0), alpha = 0.05)
+CIs_nonloc  <- CI(fit_melanoma, new_time, c(1, 1, 0, 1, 0, 0), alpha = 0.05)
+```
+
+```{r melanoma-hazard-plot}
+ylim_h <- range(c(CIs_loc$lower_h, CIs_nonloc$upper_h), na.rm = TRUE)
+plot(CIs_loc$time, CIs_loc$h, type = "l", col = "steelblue",
+     ylim = ylim_h, xlab = "Time (months)", ylab = "Hazard",
+     main = "Estimated hazard — melanoma, GH model")
+lines(CIs_loc$time,    CIs_loc$lower_h,    col = "steelblue", lty = 2)
+lines(CIs_loc$time,    CIs_loc$upper_h,    col = "steelblue", lty = 2)
+lines(CIs_nonloc$time, CIs_nonloc$h,       col = "firebrick")
+lines(CIs_nonloc$time, CIs_nonloc$lower_h, col = "firebrick", lty = 2)
+lines(CIs_nonloc$time, CIs_nonloc$upper_h, col = "firebrick", lty = 2)
+legend("topright", c("Localised", "Non-localised"),
+       col = c("steelblue", "firebrick"), lty = 1)
+```
+
+```{r melanoma-survival-plot}
+plot(CIs_loc$time, CIs_loc$S, type = "l", col = "steelblue",
+     ylim = c(0, 1), xlab = "Time (months)", ylab = "Survival",
+     main = "Estimated survival — melanoma, GH model")
+lines(CIs_loc$time,    CIs_loc$lower_S,    col = "steelblue", lty = 2)
+lines(CIs_loc$time,    CIs_loc$upper_S,    col = "steelblue", lty = 2)
+lines(CIs_nonloc$time, CIs_nonloc$S,       col = "firebrick")
+lines(CIs_nonloc$time, CIs_nonloc$lower_S, col = "firebrick", lty = 2)
+lines(CIs_nonloc$time, CIs_nonloc$upper_S, col = "firebrick", lty = 2)
+legend("topright", c("Localised", "Non-localised"),
+       col = c("steelblue", "firebrick"), lty = 1)
+```
+
+### Time-varying hazard ratio
+
+```{r melanoma-hr-plot}
+hr <- CIs_nonloc$h / CIs_loc$h
+plot(new_time, hr, type = "l", col = "purple",
+     xlim = c(0, 200), ylim = c(0, max(hr[new_time <= 200], na.rm = TRUE)),
+     xlab = "Time (months)", ylab = "Hazard ratio",
+     main = "Time-varying HR — non-localised vs localised")
+abline(h = 1, lty = 2, col = "grey50")
+```
+
+With only two parameters for the stage effect, the GH model captures the
+time-varying hazard ratio: high at diagnosis, levelling off after approximately
+6 years. This can be compared using survPen.
+
+---
+
+## Smoothing-parameter selection
+
+The smoothing parameter $\lambda$ is chosen by minimising the modified LCV
+criterion. Three strategies are available via `lcv_method`:
+
+| `lcv_method` | Method | Notes |
+|---|---|---|
+| `"full"` (default) | Root-find on full LCV gradient (third-derivative correction) | Most accurate |
+| `"approx"` | Root-find on first-order LCV gradient | Faster |
+| `"optimize"` | Direct `optimize()` on LCV, no gradient | Gradient-free |
+
+```{r lcv-methods, eval=FALSE}
+# First-order gradient (faster)
+fit <- fit_genhaz(..., profile = TRUE, lcv_method = "approx")
+
+# Pure optimisation (no gradient)
+fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
+```

@@ -6,7 +6,7 @@ library(survival)
 set.seed(20240101)
 
 # Small dataset simulated from scenario 1)
-.sim_dat <- sim_szenario(szenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+.sim_dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
 
 # Shared knots and projection matrix
 .n_knots  <- 8

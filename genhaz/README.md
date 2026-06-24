@@ -67,7 +67,7 @@ library(genhaz)
 library(survival)
 
 set.seed(42)
-dat <- sim_szenario(szenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
 
 # Fit a GH model with automatic smoothing (LCV)
 fit <- fit_genhaz(
@@ -177,11 +177,11 @@ h(t|X) = h₀(t · exp(β₁X)) · exp((β₁ + β₂)X).
 
 ```r
 # Simulate from scenario 1 (bathtub baseline)
-dat1 <- sim_szenario(1, beta1 = 0.5, beta2 = 0.5, n = 1000)
+dat1 <- sim_scenario(1, beta1 = 0.5, beta2 = 0.5, n = 1000)
 
 # Evaluate the true hazard on a grid
 t_grid <- seq(0.01, 8, length.out = 300)
-h_true <- mixWeibSz(1, "h", t_grid, X = 0, beta1 = 0.5, beta2 = 0.5)
+h_true <- mixWeibSc(1, "h", t_grid, X = 0, beta1 = 0.5, beta2 = 0.5)
 ```
 
 ---
@@ -342,8 +342,8 @@ fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
 | `LR()` | Likelihood ratio test between nested models |
 | `knot_pattern()` | Place spline knots from event-time quantiles |
 | `plot_hazard()` | Quick hazard plot |
-| `sim_szenario()` | Simulate data from a named scenario |
-| `mixWeibSz()` | True h / H / S for a named scenario |
+| `sim_scenario()` | Simulate data from a named scenario |
+| `mixWeibSc()` | True h / H / S for a named scenario |
 | `genhaz_work()` | Low-level workhorse (advanced use) |
 
 ---

@@ -8,6 +8,14 @@
 \description{
 Fits penalized cubic spline generalized hazards (GH) models for survival data, encompassing proportional hazards (PH), accelerated failure time (AFT), additive hazards (AH), and the full GH specification. Smoothing parameter selection via a modified leave-one-out cross-validation (LCV) criterion. Also provides mixture Weibull utilities for data generation and simulation studies.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/AaronJehle/genhaz}
+  \item Report bugs at \url{https://github.com/AaronJehle/genhaz/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Aaron Jehle \email{aaron.jehle@mail.de}
 

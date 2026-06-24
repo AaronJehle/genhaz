@@ -112,7 +112,7 @@ smoothing parameter \code{lambda} via the modified LCV criterion.
 \dontrun{
 library(survival)
 set.seed(42)
-dat <- sim_szenario(szenario = 1, beta1 = 0.5, beta2 = 0.5, n = 300)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 300)
 fit <- fit_genhaz(Surv(dat$time, dat$event), ~ X, data = dat,
                   model_type = "GH", profile = TRUE, n_knots = 6,
                   tol_LCV = 0.01)

@@ -9,10 +9,15 @@ Description: Fits penalized cubic spline generalized hazards (GH) models
     time (AFT), additive hazards (AH), and the full GH specification. Smoothing parameter selection via a modified leave-one-out cross-validation (LCV)
     criterion. Also provides mixture Weibull utilities for data generation and
     simulation studies.
-License: file LICENSE
+License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
+LazyDataCompression: xz
+URL: https://github.com/AaronJehle/genhaz
+BugReports: https://github.com/AaronJehle/genhaz/issues
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+VignetteBuilder: knitr
 Imports:
     graphics,
     Rcpp (>= 1.0.0),
@@ -22,6 +27,8 @@ LinkingTo:
     RcppArmadillo
 Suggests:
     biostat3,
+    knitr,
+    rmarkdown,
     rstpm2,
     survPen,
     testthat (>= 3.0.0)

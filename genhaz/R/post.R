@@ -24,7 +24,7 @@
 #' \dontrun{
 #' library(survival)
 #' set.seed(42)
-#' dat <- sim_szenario(1, beta1 = 0.5, beta2 = 0.5, n = 300)
+#' dat <- sim_scenario(1, beta1 = 0.5, beta2 = 0.5, n = 300)
 #' fit <- fit_genhaz(Surv(dat$time, dat$event), ~X, data = dat,
 #'                   n_knots = 6, profile = TRUE, tol_LCV = 0.01)
 #'

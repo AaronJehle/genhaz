@@ -13,7 +13,6 @@ sim_mix_weib_gh(
   gamma2,
   beta1,
   beta2,
-  cens_prob = 0.1,
   tmax = 10
 )
 }
@@ -29,9 +28,6 @@ sim_mix_weib_gh(
 \item{beta1}{AFT coefficient for X.}
 
 \item{beta2}{PH coefficient for X.}
-
-\item{cens_prob}{Censoring probability (unused; censoring is determined by
-\code{tmax}). Kept for backwards compatibility.}
 
 \item{tmax}{Administrative censoring time (uniform censoring upper bound).}
 }

@@ -285,8 +285,8 @@ plot.genhaz_fit <- function(x, newdata, times,
                             ...) {
   type <- match.arg(type)
 
-  pred     <- predict(x, newdata = newdata, times = times,
-                      type = type, alpha = alpha)
+  pred     <- stats::predict(x, newdata = newdata, times = times,
+                             type = type, alpha = alpha)
   patterns <- unique(pred$pattern)
   n_pat    <- length(patterns)
 

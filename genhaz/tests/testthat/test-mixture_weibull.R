@@ -28,17 +28,17 @@ test_that("h is non-negative", {
   expect_true(all(hv >= 0))
 })
 
-test_that("mixWeibSz dispatches correctly for all 3 scenarios", {
+test_that("mixWeibSc dispatches correctly for all 3 scenarios", {
   t <- 1:3
   for (sz in 1:3) {
-    expect_length(mixWeibSz(sz, "h", t), 3)
-    expect_length(mixWeibSz(sz, "S", t), 3)
-    expect_length(mixWeibSz(sz, "H", t), 3)
+    expect_length(mixWeibSc(sz, "h", t), 3)
+    expect_length(mixWeibSc(sz, "S", t), 3)
+    expect_length(mixWeibSc(sz, "H", t), 3)
   }
 })
 
-test_that("mixWeibSz stops on invalid scenario", {
-  expect_error(mixWeibSz(99, "h", 1:3))
+test_that("mixWeibSc stops on invalid scenario", {
+  expect_error(mixWeibSc(99, "h", 1:3))
 })
 
 test_that("sim_mix_weib_gh returns data frame with correct columns", {
@@ -57,10 +57,10 @@ test_that("sim_mix_weib_gh event is 0 or 1", {
   expect_true(all(dat$event %in% c(0L, 1L)))
 })
 
-test_that("sim_szenario wrappers work for all 3 scenarios", {
+test_that("sim_scenario wrappers work for all 3 scenarios", {
   for (sz in 1:3) {
     set.seed(sz)
-    dat <- sim_szenario(sz, beta1 = 0.3, beta2 = 0.3, n = 50)
+    dat <- sim_scenario(sz, beta1 = 0.3, beta2 = 0.3, n = 50)
     expect_s3_class(dat, "data.frame")
     expect_equal(nrow(dat), 50)
   }

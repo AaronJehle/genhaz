@@ -81,7 +81,7 @@ mixWeib <- function(res = "S", t, p, lambda1, lambda2, gamma1, gamma2,
 #'     gamma1=3, gamma2=0.7).}
 #' }
 #'
-#' @param szenario Integer (1, 2, or 3) selecting the scenario.
+#' @param scenario Integer (1, 2, or 3) selecting the scenario.
 #' @param res Character: `"S"`, `"H"`, or `"h"`.
 #' @param t Numeric vector of time points.
 #' @param X Covariate value. Default 0.
@@ -93,13 +93,13 @@ mixWeib <- function(res = "S", t, p, lambda1, lambda2, gamma1, gamma2,
 #'
 #' @examples
 #' t <- seq(0.01, 5, length.out = 100)
-#' h1 <- mixWeibSz(1, "h", t, X = 1, beta1 = 0.5, beta2 = 0.5)
-mixWeibSz <- function(szenario, res = "S", t, X = 0, beta1 = 0, beta2 = 0) {
-  params <- switch(as.character(szenario),
+#' h1 <- mixWeibSc(1, "h", t, X = 1, beta1 = 0.5, beta2 = 0.5)
+mixWeibSc <- function(scenario, res = "S", t, X = 0, beta1 = 0, beta2 = 0) {
+  params <- switch(as.character(scenario),
     "1" = list(p = 0.8, lambda1 = 0.1, lambda2 = 0.1,  gamma1 = 3,    gamma2 = 1.6),
     "2" = list(p = 0.5, lambda1 = 1,   lambda2 = 1,    gamma1 = 1.5,  gamma2 = 0.5),
     "3" = list(p = 0.26,lambda1 = 0.02,lambda2 = 0.5,  gamma1 = 3,    gamma2 = 0.7),
-    stop("'szenario' must be 1, 2, or 3.")
+    stop("'scenario' must be 1, 2, or 3.")
   )
   mixWeib(res, t, params$p, params$lambda1, params$lambda2,
           params$gamma1, params$gamma2, X, beta1, beta2)
@@ -117,8 +117,6 @@ mixWeibSz <- function(szenario, res = "S", t, X = 0, beta1 = 0, beta2 = 0) {
 #' @param gamma1,gamma2 Weibull shape parameters.
 #' @param beta1 AFT coefficient for X.
 #' @param beta2 PH coefficient for X.
-#' @param cens_prob Censoring probability (unused; censoring is determined by
-#'   `tmax`). Kept for backwards compatibility.
 #' @param tmax Administrative censoring time (uniform censoring upper bound).
 #'
 #' @return Data frame with columns `time`, `X`, `event`, and `T_true`.
@@ -130,7 +128,7 @@ mixWeibSz <- function(szenario, res = "S", t, X = 0, beta1 = 0, beta2 = 0) {
 #'                        gamma1 = 3, gamma2 = 1.6, beta1 = 0.5, beta2 = 0.5)
 #' head(dat)
 sim_mix_weib_gh <- function(n, p, lambda1, lambda2, gamma1, gamma2,
-                             beta1, beta2, cens_prob = 0.1, tmax = 10) {
+                             beta1, beta2, tmax = 10) {
   X      <- rbinom(n, 1, 0.5)
   U      <- runif(n)
   T_true <- numeric(n)
@@ -141,20 +139,19 @@ sim_mix_weib_gh <- function(n, p, lambda1, lambda2, gamma1, gamma2,
                           extendInt = "yes")$root
   }
   t_cens <- runif(n, min = 0, max = tmax)
-  T      <- pmin(T_true, t_cens)
-  event  <- as.integer(T_true <= T)
-  data.frame(time = T, X = X, event = event, T_true = T_true)
+  t_obs  <- pmin(T_true, t_cens)
+  event  <- as.integer(T_true <= t_obs)
+  data.frame(time = t_obs, X = X, event = event, T_true = T_true)
 }
 
 #' Simulate data for a named scenario
 #'
 #' Convenience wrapper around [sim_mix_weib_gh()] using the three pre-defined
-#' simulation scenarios (see [mixWeibSz()]).
+#' simulation scenarios (see [mixWeibSc()]).
 #'
-#' @param szenario Integer (1, 2, or 3).
+#' @param scenario Integer (1, 2, or 3).
 #' @param beta1 AFT coefficient.
 #' @param beta2 PH coefficient.
-#' @param cens_prob Passed to [sim_mix_weib_gh()].
 #' @param n Sample size.
 #' @param tmax Administrative censoring time.
 #'
@@ -163,18 +160,17 @@ sim_mix_weib_gh <- function(n, p, lambda1, lambda2, gamma1, gamma2,
 #'
 #' @examples
 #' set.seed(1)
-#' dat <- sim_szenario(1, beta1 = 0.5, beta2 = 0.5, n = 500)
+#' dat <- sim_scenario(1, beta1 = 0.5, beta2 = 0.5, n = 500)
 #' table(dat$event)
-sim_szenario <- function(szenario, beta1, beta2, cens_prob = 0.1,
-                          n = 1000, tmax = 10) {
-  params <- switch(as.character(szenario),
+sim_scenario <- function(scenario, beta1, beta2, n = 1000, tmax = 10) {
+  params <- switch(as.character(scenario),
     "1" = list(p = 0.8, lambda1 = 0.1, lambda2 = 0.1,  gamma1 = 3,   gamma2 = 1.6),
     "2" = list(p = 0.5, lambda1 = 1,   lambda2 = 1,    gamma1 = 1.5, gamma2 = 0.5),
     "3" = list(p = 0.26,lambda1 = 0.02,lambda2 = 0.5,  gamma1 = 3,   gamma2 = 0.7),
-    stop("'szenario' must be 1, 2, or 3.")
+    stop("'scenario' must be 1, 2, or 3.")
   )
   sim_mix_weib_gh(n = n, p = params$p, lambda1 = params$lambda1,
                   lambda2 = params$lambda2, gamma1 = params$gamma1,
                   gamma2 = params$gamma2, beta1 = beta1, beta2 = beta2,
-                  cens_prob = cens_prob, tmax = tmax)
+                  tmax = tmax)
 }
