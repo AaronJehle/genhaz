@@ -138,6 +138,45 @@ pred_s <- predict(fit, newdata = nd, times = t_grid, type = "survival")
 head(pred_s)
 ```
 
+### Restricted mean survival time
+
+`type = "rmst"` integrates the survival curve from 0 to each restriction time
+$\tau$ using 25-point Gauss-Legendre quadrature. Confidence intervals are
+obtained via the delta method applied to the integral.
+
+```{r predict-rmst}
+tau_grid <- c(2, 4, 6, 8)
+rmst <- predict(fit, newdata = nd, times = tau_grid, type = "rmst")
+rmst
+```
+
+### Between-group differences
+
+`type = "surv_diff"` and `type = "rmst_diff"` compare two covariate patterns
+(exactly two rows in `newdata`). The gradient of the difference is propagated
+through the shared parameter covariance matrix, so the estimator accounts for
+the correlation between the two curves.
+
+```{r predict-surv-diff}
+diff_s <- predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
+head(diff_s)
+
+plot(diff_s$time, diff_s$estimate, type = "l",
+     xlab = "Time", ylab = "Survival difference",
+     main = "S(t | X=0) − S(t | X=1)")
+lines(diff_s$time, diff_s$lower, lty = 2, col = "grey50")
+lines(diff_s$time, diff_s$upper, lty = 2, col = "grey50")
+abline(h = 0, lty = 3, col = "grey70")
+```
+
+The RMST difference summarises the group contrast in a single number per
+restriction time:
+
+```{r predict-rmst-diff}
+rmst_diff <- predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")
+rmst_diff
+```
+
 ---
 
 ## Plotting
@@ -313,6 +352,42 @@ abline(h = 1, lty = 2, col = "grey50")
 With only two parameters for the stage effect, the GH model captures the
 time-varying hazard ratio: high at diagnosis, levelling off after approximately
 6 years. This can be compared using survPen.
+
+### RMST and survival difference
+
+`predict()` supports `type = "surv_diff"` and `type = "rmst_diff"` for any
+fitted model. The code below illustrates the pattern; factor levels for
+`agegrp` and `sex` must match those used during fitting (i.e. those in `mel`).
+
+```{r melanoma-differences, eval=FALSE}
+mel <- biostat3::melanoma
+mel$X      <- ifelse(mel$stage == "Localised", 0, 1)
+mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
+
+nd_mel <- data.frame(
+  X      = c(0L, 1L),
+  period = c(1L, 1L),
+  agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
+  sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
+)
+rownames(nd_mel) <- c("Localised", "Non-localised")
+
+# Survival difference S(t | Localised) - S(t | Non-localised)
+diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
+                      times = new_time, type = "surv_diff")
+plot(diff_s_mel$time, diff_s_mel$estimate, type = "l",
+     xlab = "Time (months)", ylab = "Survival difference",
+     main = "S(t | Localised) − S(t | Non-localised)")
+lines(diff_s_mel$time, diff_s_mel$lower, lty = 2, col = "grey50")
+lines(diff_s_mel$time, diff_s_mel$upper, lty = 2, col = "grey50")
+abline(h = 0, lty = 3, col = "grey70")
+
+# RMST difference at 1, 2, 5, 10, 20 years (months)
+tau_mel  <- c(12, 24, 60, 120, 240)
+rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
+                    times = tau_mel, type = "rmst_diff")
+rmst_mel
+```
 
 ---
 

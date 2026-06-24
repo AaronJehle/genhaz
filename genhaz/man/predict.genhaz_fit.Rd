@@ -8,7 +8,7 @@
   object,
   newdata,
   times,
-  type = c("hazard", "survival", "cumhaz"),
+  type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff"),
   alpha = 0.05,
   ...
 )
@@ -18,12 +18,17 @@
 
 \item{newdata}{A \code{data.frame} of covariate values. Each row defines one
 covariate pattern; row names are used as group labels in the output.
-Must contain all variables referenced in the model formula.}
+Must contain all variables referenced in the model formula. For
+\code{"surv_diff"} and \code{"rmst_diff"}, exactly two rows are required.}
 
-\item{times}{Numeric vector of evaluation time points.}
+\item{times}{Numeric vector of time points. For \code{"rmst"} and \code{"rmst_diff"},
+these are restriction times tau at which RMST(tau) = integral_0^tau S(t) dt
+is evaluated.}
 
-\item{type}{Quantity to predict: \code{"hazard"} (default), \code{"survival"}, or
-\code{"cumhaz"} (cumulative hazard).}
+\item{type}{Quantity to predict: \code{"hazard"} (default), \code{"survival"},
+\code{"cumhaz"} (cumulative hazard), \code{"rmst"} (restricted mean survival time),
+\code{"surv_diff"} (survival difference between two groups), or \code{"rmst_diff"}
+(RMST difference between two groups).}
 
 \item{alpha}{Significance level for confidence intervals. Default 0.05.}
 
@@ -31,24 +36,24 @@ Must contain all variables referenced in the model formula.}
 }
 \value{
 A \code{data.frame} with columns \code{pattern}, \code{time}, \code{estimate},
-\code{lower}, \code{upper}. Rows are grouped by covariate pattern (one block
-per row of \code{newdata}).
+\code{lower}, \code{upper}. For per-group types rows are grouped by covariate
+pattern; for difference types a single block labelled
+\code{"group1 - group2"} is returned.
 }
 \description{
 Evaluates the fitted model at one or more covariate patterns over a time
 grid, returning pointwise estimates with delta-method confidence intervals.
-Delegates to \code{\link[=CI]{CI()}} for all computations.
+Only the requested quantity is computed.
 }
 \examples{
 \dontrun{
 t_grid <- seq(0.01, 8, length.out = 200)
-
-# Single pattern
-pred0 <- predict(fit, newdata = data.frame(X = 0), times = t_grid)
-
-# Two named groups
 nd <- data.frame(X = c(0, 1))
 rownames(nd) <- c("Unexposed", "Exposed")
-pred <- predict(fit, newdata = nd, times = t_grid, type = "survival")
+
+predict(fit, newdata = nd, times = t_grid, type = "survival")
+predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
+predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
+predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
 }
 }

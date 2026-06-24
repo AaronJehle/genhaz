@@ -112,6 +112,7 @@ CI <- function(fit, t, covariate, alpha = 0.05) {
   SE_logH <- sqrt(var_H) / H
 
   # Hazard
+  
   grad_h  <- post(fit, X_mat, t, "gradient_h")
   hv      <- post(fit, X_mat, t, "h")
   var_h   <- rowSums((grad_h %*% var_theta) * grad_h)

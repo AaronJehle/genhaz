@@ -108,15 +108,29 @@ print(fit)        # model type, lambda, EDF, AIC, coefficient table with Wald CI
 summary(fit)      # as above plus exponentiated estimates exp(beta1), exp(beta2)
 ```
 
-**Predict** hazard, survival, or cumulative hazard over a time grid — one
-row of `newdata` per covariate pattern, row names become group labels:
+**Predict** hazard, survival, cumulative hazard, or RMST over a time grid —
+one row of `newdata` per covariate pattern, row names become group labels:
 
 ```r
 nd <- data.frame(X = c(0, 1))
 rownames(nd) <- c("X = 0", "X = 1")
 
 pred <- predict(fit, newdata = nd, times = t_grid, type = "survival")
+# type = "hazard" | "survival" | "cumhaz" | "rmst" | "surv_diff" | "rmst_diff"
 # returns a data.frame: pattern | time | estimate | lower | upper
+```
+
+Between-group differences are supported for exactly two covariate patterns.
+The result is labelled `"group1 - group2"` and carries symmetric delta-method
+confidence intervals:
+
+```r
+# Survival difference S(t | X=0) - S(t | X=1)
+diff_s <- predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
+
+# RMST difference at several restriction times
+tau_grid <- c(2, 4, 6, 8)
+diff_r   <- predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")
 ```
 
 **Plot** with automatic colours and delta-method confidence bands:
@@ -333,7 +347,7 @@ fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
 | `fit_genhaz()` | Fit a GH model (high-level interface) |
 | `print(fit)` | Concise model overview with Wald CIs |
 | `summary(fit)` | Full coefficient table with exponentiated estimates |
-| `predict(fit, newdata, times)` | Hazard / survival / cumhaz with delta-method CIs |
+| `predict(fit, newdata, times)` | Hazard / survival / cumhaz / RMST and between-group differences with delta-method CIs |
 | `plot(fit, newdata, times)` | Multi-group curve plot with confidence bands |
 | `post()` | Evaluate h, H, S and gradients at new (time, X) |
 | `CI()` | Pointwise confidence bands for h, H, S |

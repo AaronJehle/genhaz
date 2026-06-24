@@ -6,7 +6,7 @@
 \alias{genhaz-package}
 \title{genhaz: General Hazard Models for Survival Analysis}
 \description{
-Fits penalized cubic spline generalized hazards (GH) models for survival data, encompassing proportional hazards (PH), accelerated failure time (AFT), additive hazards (AH), and the full GH specification. Smoothing parameter selection via a modified leave-one-out cross-validation (LCV) criterion. Also provides mixture Weibull utilities for data generation and simulation studies.
+Fits penalized cubic spline generalized hazards (GH) models for survival data, encompassing proportional hazards (PH), accelerated failure time (AFT), additive hazards (AH), and the full GH specification. Smoothing parameter selection via a modified leave-one-out cross-validation (LCV) criterion. Post-estimation inference includes pointwise delta-method confidence intervals for the hazard, survival, cumulative hazard, restricted mean survival time (RMST), and their between-group differences. Also provides mixture Weibull utilities for data generation and simulation studies.
 }
 \seealso{
 Useful links:
