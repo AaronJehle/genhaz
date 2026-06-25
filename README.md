@@ -1,1 +1,1 @@
-./genhaz/readme.md
+[./genhaz/README.md]
