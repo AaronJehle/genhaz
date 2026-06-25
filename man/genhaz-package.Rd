@@ -12,6 +12,7 @@ Fits penalized cubic spline generalized hazards (GH) models for survival data, e
 Useful links:
 \itemize{
   \item \url{https://github.com/AaronJehle/genhaz}
+  \item \url{https://aaronjehle.github.io/genhaz/}
   \item Report bugs at \url{https://github.com/AaronJehle/genhaz/issues}
 }
 

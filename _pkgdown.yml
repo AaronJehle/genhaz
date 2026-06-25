@@ -27,6 +27,7 @@ reference:
   - print.genhaz_fit
   - summary.genhaz_fit
   - predict.genhaz_fit
+  - plot.genhaz_pred
   - plot.genhaz_fit
 - title: Inference
   contents:

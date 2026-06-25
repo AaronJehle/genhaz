@@ -166,6 +166,12 @@ print.summary.genhaz_fit <- function(x, digits = 4, ...) {
 
 # ---- predict ----------------------------------------------------------------
 
+as_genhaz_pred <- function(df, type) {
+  class(df)             <- c("genhaz_pred", "data.frame")
+  attr(df, "pred_type") <- type
+  df
+}
+
 #' Predict from a fitted GH model
 #'
 #' Evaluates the fitted model at one or more covariate patterns over a time
@@ -188,9 +194,11 @@ print.summary.genhaz_fit <- function(x, digits = 4, ...) {
 #' @param alpha Significance level for confidence intervals. Default 0.05.
 #' @param ... Currently unused.
 #'
-#' @return A `data.frame` with columns `pattern`, `time`, `estimate`,
-#'   `lower`, `upper`. For per-group types rows are grouped by covariate
-#'   pattern; for difference types a single block labelled
+#' @return A `data.frame` of class `c("genhaz_pred", "data.frame")` with
+#'   columns `pattern`, `time`, `estimate`, `lower`, `upper`. A `pred_type`
+#'   attribute records which quantity was computed; `plot()` uses this to set
+#'   axis labels automatically. For per-group types rows are grouped by
+#'   covariate pattern; for difference types a single block labelled
 #'   `"group1 - group2"` is returned.
 #' @export
 #'
@@ -238,11 +246,12 @@ predict.genhaz_fit <- function(object, newdata, times,
       grad_diff <- -S1 * grad_H1 + S2 * grad_H2
       var_diff  <- rowSums((grad_diff %*% var_theta) * grad_diff)
 
-      return(data.frame(pattern  = pat_label, time = times,
+      return(as_genhaz_pred(data.frame(
+                        pattern  = pat_label, time = times,
                         estimate = diff_val,
                         lower    = diff_val - z * sqrt(var_diff),
                         upper    = diff_val + z * sqrt(var_diff),
-                        stringsAsFactors = FALSE))
+                        stringsAsFactors = FALSE), type))
 
     } else if (type == "rmst_diff") {
       gl  <- gauss_legendre(25L)
@@ -264,11 +273,12 @@ predict.genhaz_fit <- function(object, newdata, times,
         c(diff_val, diff_val - z * sqrt(var_diff), diff_val + z * sqrt(var_diff))
       }, numeric(3)))
 
-      return(data.frame(pattern  = pat_label, time = times,
+      return(as_genhaz_pred(data.frame(
+                        pattern  = pat_label, time = times,
                         estimate = out[, 1L],
                         lower    = out[, 2L],
                         upper    = out[, 3L],
-                        stringsAsFactors = FALSE))
+                        stringsAsFactors = FALSE), type))
 
     } else if (type == "hazard_ratio") {
       xi1 <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
@@ -283,11 +293,12 @@ predict.genhaz_fit <- function(object, newdata, times,
       grad_logHR <- grad_h1 / h1 - grad_h2 / h2   # row-wise: each row scaled by scalar
       var_logHR  <- rowSums((grad_logHR %*% var_theta) * grad_logHR)
 
-      return(data.frame(pattern  = pat_label, time = times,
+      return(as_genhaz_pred(data.frame(
+                        pattern  = pat_label, time = times,
                         estimate = HR,
                         lower    = exp(log(HR) - z * sqrt(var_logHR)),
                         upper    = exp(log(HR) + z * sqrt(var_logHR)),
-                        stringsAsFactors = FALSE))
+                        stringsAsFactors = FALSE), type))
 
     } else {
       # time_ratio: TR(t) = tau/t where H2(tau) = H1(t), i.e. S2(tau) = S1(t).
@@ -319,11 +330,12 @@ predict.genhaz_fit <- function(object, newdata, times,
                 exp(log(TR_j) + z * sqrt(var_logTR)))
       }, numeric(3)))
 
-      return(data.frame(pattern  = pat_label, time = times,
+      return(as_genhaz_pred(data.frame(
+                        pattern  = pat_label, time = times,
                         estimate = out[, 1L],
                         lower    = out[, 2L],
                         upper    = out[, 3L],
-                        stringsAsFactors = FALSE))
+                        stringsAsFactors = FALSE), type))
     }
   }
 
@@ -392,89 +404,81 @@ predict.genhaz_fit <- function(object, newdata, times,
     }
   })
 
-  do.call(rbind, result_list)
+  as_genhaz_pred(do.call(rbind, result_list), type)
 }
 
 
 # ---- plot -------------------------------------------------------------------
 
-#' Plot estimated curves from a fitted GH model
+#' Plot a genhaz prediction
 #'
-#' Plots hazard, survival, or cumulative hazard curves for one or more
-#' covariate patterns. Each row of `newdata` becomes a separate coloured
-#' line; row names serve as legend labels. Confidence bands are drawn as
-#' dashed lines of the same colour.
+#' Plots the output of [predict.genhaz_fit()] — any of the eight prediction
+#' types. Each distinct covariate pattern becomes a coloured line; confidence
+#' bands are drawn as dashed lines of the same colour. `ylim` is always
+#' derived from the full range of CI bands plus the point estimate, so nothing
+#' is clipped. Axis labels and title are set automatically from the prediction
+#' type and can be overridden via `ylab` / `main`.
 #'
-#' @param x A `"genhaz_fit"` object from [fit_genhaz()].
-#' @param newdata A `data.frame` of covariate values. One row per group.
-#'   Set row names for informative legend labels.
-#' @param times Numeric vector of evaluation time points.
-#' @param type Quantity to plot: `"hazard"` (default), `"survival"`, or
-#'   `"cumhaz"`.
-#' @param alpha Significance level for confidence bands. Default 0.05.
+#' @param x A `"genhaz_pred"` object returned by [predict.genhaz_fit()].
 #' @param col Colour vector (recycled over groups). Defaults to `2, 3, 4, ...`
 #'   (R's standard colour sequence, skipping black).
 #' @param lty Line type for point-estimate curves. Default `1`.
 #' @param xlab X-axis label. Default `"Time"`.
-#' @param ylab Y-axis label. Derived from `type` when `NULL`.
-#' @param main Plot title. Derived from `type` when `NULL`.
+#' @param ylab Y-axis label. Derived from the prediction type when `NULL`.
+#' @param main Plot title. Derived from the prediction type when `NULL`.
 #' @param legend Logical; draw a legend when multiple groups are present?
 #'   Default `TRUE`.
 #' @param ci Logical; overlay dashed confidence band lines? Default `TRUE`.
 #' @param ... Additional graphical parameters passed to [graphics::plot()].
 #'
-#' @return Invisibly returns the `data.frame` produced by
-#'   `predict.genhaz_fit()`.
+#' @return Invisibly returns `x`.
 #' @importFrom graphics lines legend
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' t_grid <- seq(0.01, 8, length.out = 300)
-#'
-#' # Hazard (default) for two groups
 #' nd <- data.frame(X = c(0, 1))
 #' rownames(nd) <- c("X = 0", "X = 1")
-#' plot(fit, newdata = nd, times = t_grid)
+#' t_grid <- seq(0.01, 8, length.out = 200)
 #'
-#' # Survival for a single group
-#' plot(fit, newdata = data.frame(X = 0), times = t_grid, type = "survival")
+#' pred <- predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
+#' plot(pred, col = "purple")
+#' abline(h = 1, lty = 2)
 #' }
-plot.genhaz_fit <- function(x, newdata, times,
-                            type   = c("hazard", "survival", "cumhaz"),
-                            alpha  = 0.05,
-                            col    = NULL,
-                            lty    = 1,
-                            xlab   = "Time",
-                            ylab   = NULL,
-                            main   = NULL,
-                            legend = TRUE,
-                            ci     = TRUE,
-                            ...) {
-  type <- match.arg(type)
+plot.genhaz_pred <- function(x, col = NULL, lty = 1,
+                              xlab = "Time", ylab = NULL, main = NULL,
+                              legend = TRUE, ci = TRUE, ...) {
+  pred_type <- attr(x, "pred_type")
+  patterns  <- unique(x$pattern)
+  n_pat     <- length(patterns)
 
-  pred     <- stats::predict(x, newdata = newdata, times = times,
-                             type = type, alpha = alpha)
-  patterns <- unique(pred$pattern)
-  n_pat    <- length(patterns)
+  if (is.null(col)) col <- seq_len(n_pat) + 1L
 
-  if (is.null(col))  col  <- seq_len(n_pat) + 1L
-  if (is.null(ylab)) ylab <- switch(type,
-    hazard   = "Hazard h(t)",
-    survival = "Survival S(t)",
-    cumhaz   = "Cumulative hazard H(t)"
+  if (is.null(ylab)) ylab <- switch(pred_type,
+    hazard       = "Hazard h(t)",
+    survival     = "Survival S(t)",
+    cumhaz       = "Cumulative hazard H(t)",
+    rmst         = "RMST",
+    surv_diff    = "Survival difference",
+    rmst_diff    = "RMST difference",
+    hazard_ratio = "Hazard ratio",
+    time_ratio   = "Time ratio"
   )
-  if (is.null(main)) main <- switch(type,
-    hazard   = "Estimated hazard",
-    survival = "Estimated survival",
-    cumhaz   = "Estimated cumulative hazard"
+  if (is.null(main)) main <- switch(pred_type,
+    hazard       = "Estimated hazard",
+    survival     = "Estimated survival",
+    cumhaz       = "Estimated cumulative hazard",
+    rmst         = "Restricted mean survival time",
+    surv_diff    = "Survival difference",
+    rmst_diff    = "RMST difference",
+    hazard_ratio = "Hazard ratio h1(t) / h2(t)",
+    time_ratio   = "Time ratio"
   )
 
-  # Y range spans all CI bands so no line is clipped
-  ylim <- range(c(pred$lower, pred$upper), na.rm = TRUE)
+  # Y range covers estimate + both CI bands — nothing is clipped
+  ylim <- range(c(x$lower, x$upper, x$estimate), na.rm = TRUE)
 
-  # First group initialises the plot device
-  d1 <- pred[pred$pattern == patterns[1L], ]
+  d1 <- x[x$pattern == patterns[1L], ]
   plot(d1$time, d1$estimate, type = "l",
        col = col[1L], lty = lty,
        xlab = xlab, ylab = ylab, main = main, ylim = ylim, ...)
@@ -483,9 +487,8 @@ plot.genhaz_fit <- function(x, newdata, times,
     lines(d1$time, d1$upper, col = col[1L], lty = 2L)
   }
 
-  # Additional groups added with lines()
   for (i in seq_along(patterns)[-1L]) {
-    di <- pred[pred$pattern == patterns[i], ]
+    di <- x[x$pattern == patterns[i], ]
     lines(di$time, di$estimate, col = col[i], lty = lty)
     if (ci) {
       lines(di$time, di$lower, col = col[i], lty = 2L)
@@ -493,12 +496,56 @@ plot.genhaz_fit <- function(x, newdata, times,
     }
   }
 
-  if (legend && n_pat > 1L) {
-    legend("topright",
-           legend = as.character(patterns),
-           col    = col[seq_len(n_pat)],
-           lty    = lty)
-  }
+  if (legend && n_pat > 1L)
+    legend("topright", legend = as.character(patterns),
+           col = col[seq_len(n_pat)], lty = lty)
 
+  invisible(x)
+}
+
+
+#' Plot estimated curves from a fitted GH model
+#'
+#' Calls [predict.genhaz_fit()] and passes the result to `plot.genhaz_pred()`.
+#' Supports all eight prediction types; `ylim` is automatically derived from
+#' the full range of CI bands so no line is clipped.
+#'
+#' @param x A `"genhaz_fit"` object from [fit_genhaz()].
+#' @param newdata A `data.frame` of covariate values. One row per group.
+#'   Row names become legend labels.
+#' @param times Numeric vector of evaluation time points.
+#' @param type Quantity to plot. One of `"hazard"` (default), `"survival"`,
+#'   `"cumhaz"`, `"rmst"`, `"surv_diff"`, `"rmst_diff"`, `"hazard_ratio"`,
+#'   or `"time_ratio"`. The last four require exactly two rows in `newdata`.
+#' @param alpha Significance level for confidence bands. Default 0.05.
+#' @param ... Additional arguments passed to `plot.genhaz_pred()` and then to
+#'   [graphics::plot()] (e.g. `col`, `lty`, `xlab`, `main`, `xlim`).
+#'
+#' @return Invisibly returns the `"genhaz_pred"` object from
+#'   [predict.genhaz_fit()].
+#' @importFrom graphics lines legend
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' nd <- data.frame(X = c(0, 1))
+#' rownames(nd) <- c("X = 0", "X = 1")
+#' t_grid <- seq(0.01, 8, length.out = 300)
+#'
+#' plot(fit, newdata = nd, times = t_grid)
+#' plot(fit, newdata = nd, times = t_grid, type = "survival",
+#'      col = c("steelblue", "firebrick"))
+#' plot(fit, newdata = nd, times = t_grid, type = "hazard_ratio",
+#'      col = "purple")
+#' }
+plot.genhaz_fit <- function(x, newdata, times,
+                            type  = c("hazard", "survival", "cumhaz",
+                                      "rmst", "surv_diff", "rmst_diff",
+                                      "hazard_ratio", "time_ratio"),
+                            alpha = 0.05, ...) {
+  type <- match.arg(type)
+  pred <- stats::predict(x, newdata = newdata, times = times,
+                         type = type, alpha = alpha)
+  plot(pred, ...)
   invisible(pred)
 }

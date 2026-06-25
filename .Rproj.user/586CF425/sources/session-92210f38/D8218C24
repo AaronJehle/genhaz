@@ -1,0 +1,24 @@
+{
+    "id": "D8218C24",
+    "path": "~/02_KI/GH/03_NextGen/genhaz/data-raw/prepare_melanoma_fit.R",
+    "project_path": "data-raw/prepare_melanoma_fit.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1782394760288.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1782299559,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1782299559,
+    "read_only": false,
+    "read_only_alternatives": []
+}
