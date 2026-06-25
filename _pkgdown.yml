@@ -46,4 +46,16 @@ reference:
   contents:
   - knot_pattern
   - plot_hazard
+  - translate_time
+  - translate_time2
+- title: Data
+  contents:
+  - fit_melanoma
+  - mixture_weibull
+- title: Internal (C++ / low-level)
+  contents:
+  - print.summary.genhaz_fit
+  - crs_cpp
+  - smf_cpp
+  - quantile_type7
 
