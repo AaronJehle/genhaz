@@ -1,0 +1,52 @@
+url: https://aaronjehle.github.io/genhaz/
+
+template:
+  bootstrap: 5
+
+home:
+  title: "genhaz — Penalised Flexible-Parametric Generalised Hazard Models"
+
+navbar:
+  structure:
+    left:  [intro, articles, reference]
+    right: [github]
+  components:
+    github:
+      icon: fab fa-github
+      href: https://github.com/AaronJehle/genhaz
+
+articles:
+  - title: ~
+    contents:
+      - genhaz
+
+reference:
+  - title: "Model fitting"
+    contents:
+      - fit_genhaz
+      - genhaz_work
+  - title: "S3 methods"
+    contents:
+      - print.genhaz_fit
+      - summary.genhaz_fit
+      - predict.genhaz_fit
+      - plot.genhaz_fit
+  - title: "Inference"
+    contents:
+      - CI
+      - waldCI
+      - waldCI_minus
+      - LR
+  - title: "Post-processing"
+    contents:
+      - post
+  - title: "Simulation"
+    contents:
+      - sim_scenario
+      - mixWeibSc
+      - mixWeib
+      - sim_mix_weib_gh
+  - title: "Utilities"
+    contents:
+      - knot_pattern
+      - plot_hazard

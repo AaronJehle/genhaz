@@ -7,3 +7,9 @@
 ^src/.*\.so$
 ^src/symbols\.rds$
 ^src/tmp\.def$
+^.*\.Rproj$
+^\.Rproj\.user$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
