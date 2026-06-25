@@ -57,10 +57,13 @@ predict(
 
 ## Value
 
-A `data.frame` with columns `pattern`, `time`, `estimate`, `lower`,
-`upper`. For per-group types rows are grouped by covariate pattern; for
-difference types a single block labelled `"group1 - group2"` is
-returned.
+A `data.frame` of class `c("genhaz_pred", "data.frame")` with columns
+`pattern`, `time`, `estimate`, `lower`, `upper`. A `pred_type` attribute
+records which quantity was computed;
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) uses this to
+set axis labels automatically. For per-group types rows are grouped by
+covariate pattern; for difference types a single block labelled
+`"group1 - group2"` is returned.
 
 ## Examples
 

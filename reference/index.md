@@ -15,6 +15,8 @@
   : Summarise a fitted GH model
 - [`predict(`*`<genhaz_fit>`*`)`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md)
   : Predict from a fitted GH model
+- [`plot(`*`<genhaz_pred>`*`)`](https://aaronjehle.github.io/genhaz/reference/plot.genhaz_pred.md)
+  : Plot a genhaz prediction
 - [`plot(`*`<genhaz_fit>`*`)`](https://aaronjehle.github.io/genhaz/reference/plot.genhaz_fit.md)
   : Plot estimated curves from a fitted GH model
 

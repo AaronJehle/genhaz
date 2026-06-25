@@ -46,332 +46,6 @@ e.g. `model_type = c("PH", "GH")` for two covariates.
 
 ------------------------------------------------------------------------
 
-## Quick start
-
-We simulate 500 observations from scenario 1 (bathtub-shaped baseline
-hazard) with $`\beta_1 = \beta_2 = 0.5`$ and fit a GH model with
-automatic smoothing parameter selection.
-
-``` r
-
-library(genhaz)
-library(survival)
-
-set.seed(42)
-dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
-head(dat)
-#>        time X event    T_true
-#> 1 1.5137723 1     1 1.5137723
-#> 2 0.6274633 1     0 1.4308403
-#> 3 1.9735251 0     1 1.9735251
-#> 4 0.6619293 1     1 0.6619293
-#> 5 1.5659811 1     1 1.5659811
-#> 6 0.2222732 1     0 0.5267612
-```
-
-``` r
-
-fit <- fit_genhaz(
-  surv       = Surv(dat$time, dat$event),
-  formula    = ~ X,
-  data       = dat,
-  model_type = "GH",
-  profile    = TRUE,
-  n_knots    = 6,
-  tol_LCV    = 0.05,
-  lcv_method = "optimize"
-)
-```
-
-------------------------------------------------------------------------
-
-## Inspecting the fit
-
-[`print()`](https://rdrr.io/r/base/print.html) gives a concise overview:
-model metadata and a coefficient table with Wald confidence intervals.
-
-``` r
-
-print(fit)
-#> Fitted generalized hazard model (genhaz)
-#> 
-#>   Model type : GH
-#>   Knots      : 6 (log-time scale)
-#>   Lambda     : 362.7
-#>   EDF        : 5.89
-#>   AIC        : 877.97
-#> 
-#> Covariate coefficients (Wald 95% CI):
-#>         Estimate Std.Err      z  p.value lower.95% upper.95%
-#> beta1_X   0.2033  0.1521 1.3364 0.181419   -0.0949    0.5015
-#> beta2_X   1.2617  0.3713 3.3983 0.000678    0.5340    1.9894
-```
-
-[`summary()`](https://rdrr.io/r/base/summary.html) adds the stored
-formula, exponentiated estimates, and a full CI table. `exp(beta1)` is
-the time-acceleration factor; `exp(beta2)` is the hazard-scaling factor.
-
-``` r
-
-summary(fit)
-#> Fitted generalized hazard model (genhaz)
-#> 
-#>   Formula    : ~X
-#>   Model type : GH
-#>   Knots      : 6 (log-time scale)
-#>   Lambda     : 362.7
-#>   EDF        : 5.89
-#>   AIC        : 877.97
-#> 
-#> Covariate coefficients (Wald 95% CI):
-#>         Estimate Std.Err     z  p.value    lower  upper exp(Est.) exp(lower)
-#> beta1_X   0.2033  0.1521 1.336 0.181419 -0.09487 0.5015     1.225     0.9095
-#> beta2_X   1.2617  0.3713 3.398 0.000678  0.53401 1.9894     3.531     1.7058
-#>         exp(upper)
-#> beta1_X      1.651
-#> beta2_X      7.311
-```
-
-The summary object can also be used programmatically:
-
-``` r
-
-s <- summary(fit)
-s$coef_tab
-#>          Estimate   Std.Err        z      p.value       lower     upper
-#> beta1_X 0.2033293 0.1521473 1.336398 0.1814192329 -0.09487388 0.5015326
-#> beta2_X 1.2617161 0.3712835 3.398255 0.0006781715  0.53401378 1.9894184
-#>          exp.Est exp.lower exp.upper
-#> beta1_X 1.225476 0.9094876   1.65125
-#> beta2_X 3.531477 1.7057652   7.31128
-```
-
-------------------------------------------------------------------------
-
-## Predictions
-
-[`predict()`](https://rdrr.io/r/stats/predict.html) accepts a
-`data.frame` of covariate values (one row per group) and a time grid,
-and returns a long `data.frame` with pointwise delta-method confidence
-intervals. Row names of `newdata` become the group labels.
-
-``` r
-
-t_grid <- seq(0.01, 8, length.out = 200)
-
-nd <- data.frame(X = c(0, 1))
-rownames(nd) <- c("X = 0", "X = 1")
-
-pred_h <- predict(fit, newdata = nd, times = t_grid, type = "hazard")
-head(pred_h)
-#>   pattern       time     estimate        lower        upper
-#> 1   X = 0 0.01000000 4.160143e-05 4.277277e-06 0.0004046216
-#> 2   X = 0 0.05015075 9.164835e-04 2.184886e-04 0.0038443294
-#> 3   X = 0 0.09030151 2.831218e-03 9.135786e-04 0.0087740606
-#> 4   X = 0 0.13045226 5.732711e-03 2.229556e-03 0.0147401406
-#> 5   X = 0 0.17060302 9.590806e-03 4.264609e-03 0.0215690443
-#> 6   X = 0 0.21075377 1.438436e-02 7.092434e-03 0.0291733137
-```
-
-Survival and cumulative hazard are requested via `type`:
-
-``` r
-
-pred_s <- predict(fit, newdata = nd, times = t_grid, type = "survival")
-head(pred_s)
-#>   pattern       time  estimate     lower     upper
-#> 1   X = 0 0.01000000 0.9999999 0.9999983 1.0000000
-#> 2   X = 0 0.05015075 0.9999842 0.9999211 0.9999969
-#> 3   X = 0 0.09030151 0.9999124 0.9996763 0.9999763
-#> 4   X = 0 0.13045226 0.9997437 0.9992162 0.9999162
-#> 5   X = 0 0.17060302 0.9994394 0.9985041 0.9997900
-#> 6   X = 0 0.21075377 0.9989616 0.9975089 0.9995673
-```
-
-### Restricted mean survival time
-
-`type = "rmst"` integrates the survival curve from 0 to each restriction
-time $`\tau`$ using 25-point Gauss-Legendre quadrature. Confidence
-intervals are obtained via the delta method applied to the integral.
-
-``` r
-
-tau_grid <- c(2, 4, 6, 8)
-rmst <- predict(fit, newdata = nd, times = tau_grid, type = "rmst")
-rmst
-#>   pattern time estimate    lower    upper
-#> 1   X = 0    2 1.700890 1.650400 1.751381
-#> 2   X = 0    4 2.210935 2.079668 2.342201
-#> 3   X = 0    6 2.351705 2.174575 2.528835
-#> 4   X = 0    8 2.409497 2.202627 2.616366
-#> 5   X = 1    2 1.062684 1.008257 1.117112
-#> 6   X = 1    4 1.069942 1.012366 1.127517
-#> 7   X = 1    6 1.069981 1.012366 1.127596
-#> 8   X = 1    8 1.069981 1.012363 1.127599
-```
-
-### Between-group differences
-
-`type = "surv_diff"` and `type = "rmst_diff"` compare two covariate
-patterns (exactly two rows in `newdata`). The gradient of the difference
-is propagated through the shared parameter covariance matrix, so the
-estimator accounts for the correlation between the two curves.
-
-``` r
-
-diff_s <- predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
-head(diff_s)
-#>         pattern       time     estimate         lower        upper
-#> 1 X = 0 - X = 1 0.01000000 7.687261e-07 -1.020718e-06 2.558170e-06
-#> 2 X = 0 - X = 1 0.05015075 8.492595e-05 -4.097166e-05 2.108236e-04
-#> 3 X = 0 - X = 1 0.09030151 4.722709e-04 -8.320470e-05 1.027747e-03
-#> 4 X = 0 - X = 1 0.13045226 1.380587e-03  1.967618e-05 2.741499e-03
-#> 5 X = 0 - X = 1 0.17060302 3.017210e-03  4.595873e-04 5.574832e-03
-#> 6 X = 0 - X = 1 0.21075377 5.580363e-03  1.452698e-03 9.708027e-03
-
-plot(diff_s$time, diff_s$estimate, type = "l",
-     xlab = "Time", ylab = "Survival difference",
-     main = "S(t | X=0) − S(t | X=1)")
-lines(diff_s$time, diff_s$lower, lty = 2, col = "grey50")
-lines(diff_s$time, diff_s$upper, lty = 2, col = "grey50")
-abline(h = 0, lty = 3, col = "grey70")
-```
-
-![](genhaz_files/figure-html/predict-surv-diff-1.png)
-
-The RMST difference summarises the group contrast in a single number per
-restriction time:
-
-``` r
-
-rmst_diff <- predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")
-rmst_diff
-#>         pattern time  estimate     lower     upper
-#> 1 X = 0 - X = 1    2 0.6382059 0.5651391 0.7112726
-#> 2 X = 0 - X = 1    4 1.1409929 0.9980127 1.2839732
-#> 3 X = 0 - X = 1    6 1.2817235 1.0957373 1.4677097
-#> 4 X = 0 - X = 1    8 1.3395153 1.1250637 1.5539669
-```
-
-`type = "hazard_ratio"` gives h1(t)/h2(t) — time-varying since the model
-is GH (it would be constant under PH). The CI is on the log scale.
-
-``` r
-
-hr <- predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
-plot(hr$time, hr$estimate, type = "l",
-     xlab = "Time", ylab = "Hazard ratio",
-     main = "h(t | X=0) / h(t | X=1)")
-lines(hr$time, hr$lower, lty = 2, col = "grey50")
-lines(hr$time, hr$upper, lty = 2, col = "grey50")
-abline(h = 1, lty = 3, col = "grey70")
-```
-
-![](genhaz_files/figure-html/predict-hazard-ratio-1.png)
-
-`type = "time_ratio"` gives TR(t) = tau/t where S2(tau) = S1(t): for
-each time t, how many multiples of t does group 2 need to reach the same
-survival level. Computed via `uniroot` per time point with a
-delta-method CI.
-
-``` r
-
-tr <- predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
-plot(tr$time, tr$estimate, type = "l",
-     xlab = "Time", ylab = "Time ratio",
-     main = "Time ratio: tau/t where S(tau | X=1) = S(t | X=0)")
-lines(tr$time, tr$lower, lty = 2, col = "grey50")
-lines(tr$time, tr$upper, lty = 2, col = "grey50")
-abline(h = 1, lty = 3, col = "grey70")
-```
-
-![](genhaz_files/figure-html/predict-time-ratio-1.png)
-
-------------------------------------------------------------------------
-
-## Plotting
-
-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) draws all
-groups as coloured lines with dashed confidence bands. Row names of
-`newdata` appear in the legend.
-
-``` r
-
-plot(fit, newdata = nd, times = t_grid)
-```
-
-![](genhaz_files/figure-html/plot-hazard-1.png)
-
-``` r
-
-plot(fit, newdata = nd, times = t_grid, type = "survival",
-     col = c("steelblue", "firebrick"))
-```
-
-![](genhaz_files/figure-html/plot-survival-1.png)
-
-Pass additional graphical parameters directly through `...`:
-
-``` r
-
-plot(fit, newdata = nd, times = t_grid, type = "survival",
-     col  = c("steelblue", "firebrick"),
-     main = "Estimated survival — GH model, scenario 1",
-     xlab = "Time (years)",
-     ci   = FALSE)
-```
-
-![](genhaz_files/figure-html/plot-custom-1.png)
-
-------------------------------------------------------------------------
-
-## Inference
-
-### Wald confidence intervals
-
-[`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md)
-computes a Wald CI for a single parameter;
-[`waldCI_minus()`](https://aaronjehle.github.io/genhaz/reference/waldCI_minus.md)
-provides a CI for the difference $`\beta_1 - \beta_2`$ (accounting for
-their covariance via the delta method).
-
-``` r
-
-waldCI(fit, "beta1_X")
-#>       lower       upper 
-#> -0.09487388  0.50153255
-waldCI(fit, "beta2_X")
-#>     lower     upper 
-#> 0.5340138 1.9894184
-waldCI_minus(fit, "beta1_X", "beta2_X")
-#>       lower       upper 
-#> -2.07437271 -0.04240081
-```
-
-### Likelihood ratio test
-
-Fit a restricted (PH) model and test against the full GH model:
-
-``` r
-
-fit_ph <- fit_genhaz(
-  surv       = Surv(dat$time, dat$event),
-  formula    = ~ X,
-  data       = dat,
-  model_type = "PH",
-  profile    = TRUE,
-  n_knots    = 6,
-  tol_LCV    = 0.05,
-  lcv_method = "optimize"
-)
-
-LR(fit_ph, fit)
-#> LR-statistic      p_value 
-#>   5.68044586   0.01715501
-```
-
-------------------------------------------------------------------------
-
 ## Real-data example: melanoma survival
 
 We use the
@@ -396,7 +70,7 @@ mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
 
 ### Fitting the model
 
-The full model fit takes approximately ~9 min and is not re-run here.
+The full model fit takes approximately 9 minutes and is not re-run here.
 The code below shows exactly what was run to produce the stored result:
 
 ``` r
@@ -414,7 +88,26 @@ fit_melanoma <- fit_genhaz(
 
 ``` r
 
+library(genhaz)
+library(survival)
 data("fit_melanoma")
+```
+
+``` r
+
+library(biostat3)
+mel        <- biostat3::melanoma
+mel$X      <- ifelse(mel$stage == "Localised", 0, 1)
+mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
+new_time   <- seq(0.5, 320, by = 0.5)   # avoids t = 0 (needed for time_ratio)
+
+nd_mel <- data.frame(
+  X      = c(0L, 1L),
+  period = c(1L, 1L),
+  agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
+  sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
+)
+rownames(nd_mel) <- c("Localised", "Non-localised")
 ```
 
 ### Results
@@ -503,105 +196,201 @@ waldCI(fit_melanoma, "beta2_X")
 
 ### Hazard and survival curves
 
-We evaluate at age group 60–74, male sex, diagnosed 1985–94 (the
-adjusted covariate vector in design-matrix order: X, period,
-agegrp60-74, sex Male).
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) dispatches on
+the fitted model, calls
+[`predict()`](https://rdrr.io/r/stats/predict.html) internally, and sets
+`ylim` from the full CI range so confidence bands are never clipped.
+Evaluated at age group 60–74, male sex, diagnosed 1985–94.
 
 ``` r
 
-new_time <- seq(0, 320, by = 0.5)
-
-CIs_loc     <- CI(fit_melanoma, new_time, c(0, 1, 0, 1, 0, 0), alpha = 0.05)
-CIs_nonloc  <- CI(fit_melanoma, new_time, c(1, 1, 0, 1, 0, 0), alpha = 0.05)
-```
-
-``` r
-
-ylim_h <- range(c(CIs_loc$lower_h, CIs_nonloc$upper_h), na.rm = TRUE)
-plot(CIs_loc$time, CIs_loc$h, type = "l", col = "steelblue",
-     ylim = ylim_h, xlab = "Time (months)", ylab = "Hazard",
-     main = "Estimated hazard — melanoma, GH model")
-lines(CIs_loc$time,    CIs_loc$lower_h,    col = "steelblue", lty = 2)
-lines(CIs_loc$time,    CIs_loc$upper_h,    col = "steelblue", lty = 2)
-lines(CIs_nonloc$time, CIs_nonloc$h,       col = "firebrick")
-lines(CIs_nonloc$time, CIs_nonloc$lower_h, col = "firebrick", lty = 2)
-lines(CIs_nonloc$time, CIs_nonloc$upper_h, col = "firebrick", lty = 2)
-legend("topright", c("Localised", "Non-localised"),
-       col = c("steelblue", "firebrick"), lty = 1)
+plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "hazard",
+     col  = c("steelblue", "firebrick"),
+     xlab = "Time (months)", main = "Estimated hazard — melanoma, GH model")
 ```
 
 ![](genhaz_files/figure-html/melanoma-hazard-plot-1.png)
 
 ``` r
 
-plot(CIs_loc$time, CIs_loc$S, type = "l", col = "steelblue",
-     ylim = c(0, 1), xlab = "Time (months)", ylab = "Survival",
-     main = "Estimated survival — melanoma, GH model")
-lines(CIs_loc$time,    CIs_loc$lower_S,    col = "steelblue", lty = 2)
-lines(CIs_loc$time,    CIs_loc$upper_S,    col = "steelblue", lty = 2)
-lines(CIs_nonloc$time, CIs_nonloc$S,       col = "firebrick")
-lines(CIs_nonloc$time, CIs_nonloc$lower_S, col = "firebrick", lty = 2)
-lines(CIs_nonloc$time, CIs_nonloc$upper_S, col = "firebrick", lty = 2)
-legend("topright", c("Localised", "Non-localised"),
-       col = c("steelblue", "firebrick"), lty = 1)
+plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "survival",
+     col  = c("steelblue", "firebrick"),
+     xlab = "Time (months)", main = "Estimated survival — melanoma, GH model")
 ```
 
 ![](genhaz_files/figure-html/melanoma-survival-plot-1.png)
 
 ### Time-varying hazard ratio
 
+`type = "hazard_ratio"` gives $`h_1(t)/h_2(t)`$ with a log-scale
+delta-method CI. Under PH this would be flat; the GH model captures the
+time variation. [`plot()`](https://rdrr.io/r/graphics/plot.default.html)
+works directly on the
+[`predict()`](https://rdrr.io/r/stats/predict.html) result.
+
 ``` r
 
-hr <- CIs_nonloc$h / CIs_loc$h
-plot(new_time, hr, type = "l", col = "purple",
-     xlim = c(0, 200), ylim = c(0, max(hr[new_time <= 200], na.rm = TRUE)),
-     xlab = "Time (months)", ylab = "Hazard ratio",
+hr_mel <- predict(fit_melanoma, newdata = nd_mel,
+                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio")
+plot(hr_mel, col = "purple",
+     xlab = "Time (months)",
      main = "Time-varying HR — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
 ```
 
-![](genhaz_files/figure-html/melanoma-hr-plot-1.png)
+![](genhaz_files/figure-html/melanoma-hr-1.png)
 
 With only two parameters for the stage effect, the GH model captures the
 time-varying hazard ratio: high at diagnosis, levelling off after
-approximately 6 years. This can be compared using survPen.
+approximately 6 years.
 
-### RMST and survival difference
+### Survival difference and RMST
 
-[`predict()`](https://rdrr.io/r/stats/predict.html) supports
-`type = "surv_diff"` and `type = "rmst_diff"` for any fitted model. The
-code below illustrates the pattern; factor levels for `agegrp` and `sex`
-must match those used during fitting (i.e. those in `mel`).
+`type = "surv_diff"` gives $`S_1(t) - S_2(t)`$ on the linear scale; the
+delta-method accounts for the correlation between the two curves.
+`type = "rmst_diff"` integrates this difference up to each restriction
+time $`\tau`$ via 25-point Gauss-Legendre quadrature.
 
 ``` r
 
-mel <- biostat3::melanoma
-mel$X      <- ifelse(mel$stage == "Localised", 0, 1)
-mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
-
-nd_mel <- data.frame(
-  X      = c(0L, 1L),
-  period = c(1L, 1L),
-  agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
-  sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
-)
-rownames(nd_mel) <- c("Localised", "Non-localised")
-
-# Survival difference S(t | Localised) - S(t | Non-localised)
 diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
                       times = new_time, type = "surv_diff")
-plot(diff_s_mel$time, diff_s_mel$estimate, type = "l",
-     xlab = "Time (months)", ylab = "Survival difference",
+plot(diff_s_mel,
+     xlab = "Time (months)",
      main = "S(t | Localised) − S(t | Non-localised)")
-lines(diff_s_mel$time, diff_s_mel$lower, lty = 2, col = "grey50")
-lines(diff_s_mel$time, diff_s_mel$upper, lty = 2, col = "grey50")
 abline(h = 0, lty = 3, col = "grey70")
+```
 
-# RMST difference at 1, 2, 5, 10, 20 years (months)
+![](genhaz_files/figure-html/melanoma-differences-1.png)
+
+``` r
+
+
 tau_mel  <- c(12, 24, 60, 120, 240)
 rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
                     times = tau_mel, type = "rmst_diff")
 rmst_mel
+#>                     pattern time   estimate      lower      upper
+#> 1 Localised - Non-localised   12  0.8138883  0.6703554  0.9574212
+#> 2 Localised - Non-localised   24  3.1478871  2.7446971  3.5510771
+#> 3 Localised - Non-localised   60 11.8855268 10.5725970 13.1984567
+#> 4 Localised - Non-localised  120 25.1408642 22.0427350 28.2389935
+#> 5 Localised - Non-localised  240 48.0778932 41.1811933 54.9745930
+```
+
+### Time ratio
+
+`type = "time_ratio"` gives $`\tau/t`$ where $`S_2(\tau) = S_1(t)`$: how
+much longer does the non-localised group need to reach the same survival
+level as the localised group at time $`t`$? Each $`\tau`$ is found via
+`uniroot`; the delta-method CI uses the implicit function theorem. This
+is computationally intensive, so the chunk is not evaluated during
+build.
+
+``` r
+
+tr_mel <- predict(fit_melanoma, newdata = nd_mel,
+                  times = seq(6, 240, by = 6), type = "time_ratio")
+plot(tr_mel, col = "darkorange",
+     xlab = "Time (months)", main = "Time ratio — non-localised vs localised")
+abline(h = 1, lty = 2, col = "grey50")
+```
+
+------------------------------------------------------------------------
+
+## Simulation and benchmarking
+
+[`sim_scenario()`](https://aaronjehle.github.io/genhaz/reference/sim_scenario.md)
+generates right-censored survival data from one of three named scenarios
+with mixture-Weibull baseline hazards (bathtub, hump-shaped, early
+peak).
+[`mixWeibSc()`](https://aaronjehle.github.io/genhaz/reference/mixWeibSc.md)
+evaluates the corresponding true $`h`$, $`H`$, and $`S`$ on a grid for
+comparison with fitted estimates.
+
+``` r
+
+set.seed(42)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+head(dat)
+#>        time X event    T_true
+#> 1 1.5137723 1     1 1.5137723
+#> 2 0.6274633 1     0 1.4308403
+#> 3 1.9735251 0     1 1.9735251
+#> 4 0.6619293 1     1 0.6619293
+#> 5 1.5659811 1     1 1.5659811
+#> 6 0.2222732 1     0 0.5267612
+```
+
+``` r
+
+fit <- fit_genhaz(
+  surv       = Surv(dat$time, dat$event),
+  formula    = ~ X,
+  data       = dat,
+  model_type = "GH",
+  profile    = TRUE,
+  n_knots    = 6,
+  tol_LCV    = 0.05,
+  lcv_method = "optimize"
+)
+```
+
+``` r
+
+print(fit)
+#> Fitted generalized hazard model (genhaz)
+#> 
+#>   Model type : GH
+#>   Knots      : 6 (log-time scale)
+#>   Lambda     : 362.7
+#>   EDF        : 5.89
+#>   AIC        : 877.97
+#> 
+#> Covariate coefficients (Wald 95% CI):
+#>         Estimate Std.Err      z  p.value lower.95% upper.95%
+#> beta1_X   0.2033  0.1521 1.3364 0.181419   -0.0949    0.5015
+#> beta2_X   1.2617  0.3713 3.3983 0.000678    0.5340    1.9894
+```
+
+### Inference
+
+[`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md)
+computes a Wald CI for a single parameter;
+[`waldCI_minus()`](https://aaronjehle.github.io/genhaz/reference/waldCI_minus.md)
+gives a CI for $`\beta_1 - \beta_2`$ (accounting for their covariance).
+
+``` r
+
+waldCI(fit, "beta1_X")
+#>       lower       upper 
+#> -0.09487388  0.50153255
+waldCI(fit, "beta2_X")
+#>     lower     upper 
+#> 0.5340138 1.9894184
+waldCI_minus(fit, "beta1_X", "beta2_X")
+#>       lower       upper 
+#> -2.07437271 -0.04240081
+```
+
+Fit a restricted (PH) model and test against the full GH model:
+
+``` r
+
+fit_ph <- fit_genhaz(
+  surv       = Surv(dat$time, dat$event),
+  formula    = ~ X,
+  data       = dat,
+  model_type = "PH",
+  profile    = TRUE,
+  n_knots    = 6,
+  tol_LCV    = 0.05,
+  lcv_method = "optimize"
+)
+
+LR(fit_ph, fit)
+#> LR-statistic      p_value 
+#>   5.68044586   0.01715501
 ```
 
 ------------------------------------------------------------------------

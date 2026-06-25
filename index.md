@@ -93,15 +93,15 @@ fit <- fit_genhaz(
 fit$par
 fit$se
 
-# Pointwise hazard and survival with 95 % confidence bands
-t_grid       <- seq(0.01, 8, length.out = 300)
-ci_unexposed <- CI(fit, t_grid, covariate = 0)
-ci_exposed   <- CI(fit, t_grid, covariate = 1)
+# Hazard and survival curves with 95 % confidence bands
+t_grid <- seq(0.01, 8, length.out = 300)
+nd     <- data.frame(X = c(0, 1))
+rownames(nd) <- c("X = 0", "X = 1")
 
-plot(ci_unexposed$time, ci_unexposed$h, type = "l", col = "blue",
-     xlab = "Time", ylab = "Hazard")
-lines(ci_exposed$time, ci_exposed$h, col = "red")
-legend("topright", c("X = 0", "X = 1"), col = c("blue", "red"), lty = 1)
+plot(fit, newdata = nd, times = t_grid, type = "hazard",
+     col = c("steelblue", "firebrick"))
+plot(fit, newdata = nd, times = t_grid, type = "survival",
+     col = c("steelblue", "firebrick"))
 ```
 
 ------------------------------------------------------------------------
@@ -185,43 +185,6 @@ Mixed models are supported via a vector, e.g.
 
 ------------------------------------------------------------------------
 
-## Simulation scenarios
-
-`genhaz` ships three mixture Weibull baseline scenarios with
-qualitatively different hazard shapes for benchmarking.
-
-Each true baseline hazard follows a two-component Weibull mixture:
-
-``` math
-h_0(t) = \frac{p\,\lambda_1\gamma_1 t^{\gamma_1-1}e^{-\lambda_1 t^{\gamma_1}} + (1-p)\,\lambda_2\gamma_2 t^{\gamma_2-1}e^{-\lambda_2 t^{\gamma_2}}}{p\,e^{-\lambda_1 t^{\gamma_1}}+(1-p)\,e^{-\lambda_2 t^{\gamma_2}}}
-```
-
-| Scenario | Baseline shape | Parameters                                      |
-|----------|----------------|-------------------------------------------------|
-| 1        | Bathtub        | p = 0.8, λ₁ = λ₂ = 0.1, γ₁ = 3, γ₂ = 1.6        |
-| 2        | Hump-shaped    | p = 0.5, λ₁ = λ₂ = 1, γ₁ = 1.5, γ₂ = 0.5        |
-| 3        | Early peak     | p = 0.26, λ₁ = 0.02, λ₂ = 0.5, γ₁ = 3, γ₂ = 0.7 |
-
-![True baseline hazards for the three simulation
-scenarios](reference/figures/scenarios_baseline.png)
-
-True baseline hazards for the three simulation scenarios
-
-The covariate effect enters as a generalised hazard: h(t\|X) = h₀(t ·
-exp(β₁X)) · exp((β₁ + β₂)X).
-
-``` r
-
-# Simulate from scenario 1 (bathtub baseline)
-dat1 <- sim_scenario(1, beta1 = 0.5, beta2 = 0.5, n = 1000)
-
-# Evaluate the true hazard on a grid
-t_grid <- seq(0.01, 8, length.out = 300)
-h_true <- mixWeibSc(1, "h", t_grid, X = 0, beta1 = 0.5, beta2 = 0.5)
-```
-
-------------------------------------------------------------------------
-
 ## Real-data example: melanoma survival
 
 We use the
@@ -280,20 +243,21 @@ fit_adj$se
 
 ### Results
 
-Confidence intervals are computed via the delta method through
-[`CI()`](https://aaronjehle.github.io/genhaz/reference/CI.md). The
-covariate vector follows the column order of the design matrix; the
-plots below evaluate at age group 60–74, male sex, diagnosed 1985–94,
-and overlay estimates from `survPen` (dashed lines) for comparison.
+Delta-method confidence intervals via
+[`predict()`](https://rdrr.io/r/stats/predict.html). Results evaluated
+at age group 60–74, male sex, diagnosed 1985–94. Plots below also
+overlay estimates from `survPen` (dashed lines) for comparison.
 
 ``` r
 
-tlim     <- max(mel$time)
-new.time <- seq(0, tlim, by = 0.01)
-
-# Covariate vectors: (X, period, agegrp=60-74, sex=Male dummies)
-CIs_adj     <- CI(fit_adj, new.time, c(0, 1, 0, 1, 0, 0), alpha = 0.05)
-CIs_exp_adj <- CI(fit_adj, new.time, c(1, 1, 0, 1, 0, 0), alpha = 0.05)
+nd_mel <- data.frame(
+  X      = c(0L, 1L),
+  period = c(1L, 1L),
+  agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
+  sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
+)
+rownames(nd_mel) <- c("Localised", "Non-localised")
+new.time <- seq(0.5, max(mel$time), by = 0.5)
 ```
 
 #### Estimated hazard curves
@@ -319,14 +283,9 @@ hazard** at every time point.
 
 ``` r
 
-plot(CIs_adj$time, CIs_adj$S, type = "l", col = "blue",
-     xlim = c(0, max(mel$time)),
-     xlab = "Time (months)", ylab = "Survival",
-     main = "Estimated Survival — Adjusted GH Model")
-lines(CIs_exp_adj$time, CIs_exp_adj$S, col = "red")
-legend("topright",
-       legend = c("Localised (X=0)", "Non-localised (X=1)"),
-       col = c("blue", "red"), lty = 1)
+plot(fit_adj, newdata = nd_mel, times = new.time, type = "survival",
+     col  = c("steelblue", "firebrick"),
+     xlab = "Time (months)", main = "Estimated survival — melanoma, GH model")
 ```
 
 ![Estimated survival curves (age 60–74, male, diagnosed 1985–94), GH
@@ -339,11 +298,11 @@ vs survPen
 
 ``` r
 
-hr_gh <- CIs_exp_adj$h / CIs_adj$h
-
-plot(new.time, hr_gh, type = "l", col = "purple",
-     xlim = c(0, 200), xlab = "Time (months)", ylab = "Hazard ratio",
-     main = "Time-Varying Hazard Ratio — Non-localised vs Localised")
+hr_mel <- predict(fit_adj, newdata = nd_mel,
+                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio")
+plot(hr_mel, col = "purple",
+     xlab = "Time (months)",
+     main = "Time-varying HR — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
 ```
 
@@ -357,6 +316,43 @@ With only two parameters (β₁, β₂) for the stage effect, the GH model
 captures most of the time-variation in the hazard ratio recovered by
 `survPen` fully flexibly. Both models agree that the hazard ratio starts
 high and levels off after approximately 6 years.
+
+------------------------------------------------------------------------
+
+## Simulation scenarios
+
+`genhaz` ships three mixture Weibull baseline scenarios with
+qualitatively different hazard shapes for benchmarking.
+
+Each true baseline hazard follows a two-component Weibull mixture:
+
+``` math
+h_0(t) = \frac{p\,\lambda_1\gamma_1 t^{\gamma_1-1}e^{-\lambda_1 t^{\gamma_1}} + (1-p)\,\lambda_2\gamma_2 t^{\gamma_2-1}e^{-\lambda_2 t^{\gamma_2}}}{p\,e^{-\lambda_1 t^{\gamma_1}}+(1-p)\,e^{-\lambda_2 t^{\gamma_2}}}
+```
+
+| Scenario | Baseline shape | Parameters                                      |
+|----------|----------------|-------------------------------------------------|
+| 1        | Bathtub        | p = 0.8, λ₁ = λ₂ = 0.1, γ₁ = 3, γ₂ = 1.6        |
+| 2        | Hump-shaped    | p = 0.5, λ₁ = λ₂ = 1, γ₁ = 1.5, γ₂ = 0.5        |
+| 3        | Early peak     | p = 0.26, λ₁ = 0.02, λ₂ = 0.5, γ₁ = 3, γ₂ = 0.7 |
+
+![True baseline hazards for the three simulation
+scenarios](reference/figures/scenarios_baseline.png)
+
+True baseline hazards for the three simulation scenarios
+
+The covariate effect enters as a generalised hazard: h(t\|X) = h₀(t ·
+exp(β₁X)) · exp((β₁ + β₂)X).
+
+``` r
+
+# Simulate from scenario 1 (bathtub baseline)
+dat1 <- sim_scenario(1, beta1 = 0.5, beta2 = 0.5, n = 1000)
+
+# Evaluate the true hazard on a grid
+t_grid <- seq(0.01, 8, length.out = 300)
+h_true <- mixWeibSc(1, "h", t_grid, X = 0, beta1 = 0.5, beta2 = 0.5)
+```
 
 ------------------------------------------------------------------------
 
@@ -390,8 +386,9 @@ fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
 | [`fit_genhaz()`](https://aaronjehle.github.io/genhaz/reference/fit_genhaz.md) | Fit a GH model (high-level interface) |
 | `print(fit)` | Concise model overview with Wald CIs |
 | `summary(fit)` | Full coefficient table with exponentiated estimates |
-| `predict(fit, newdata, times)` | Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio) with delta-method CIs |
-| `plot(fit, newdata, times)` | Multi-group curve plot with confidence bands |
+| `predict(fit, newdata, times)` | Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio) with delta-method CIs; returns a `"genhaz_pred"` object |
+| `plot(pred)` | Plot a [`predict()`](https://rdrr.io/r/stats/predict.html) result — auto `ylim`, labels, legend, CI bands |
+| `plot(fit, newdata, times)` | Convenience wrapper: calls [`predict()`](https://rdrr.io/r/stats/predict.html) then [`plot()`](https://rdrr.io/r/graphics/plot.default.html) |
 | [`post()`](https://aaronjehle.github.io/genhaz/reference/post.md) | Evaluate h, H, S and gradients at new (time, X) |
 | [`CI()`](https://aaronjehle.github.io/genhaz/reference/CI.md) | Pointwise confidence bands for h, H, S |
 | [`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md) | Wald CI for a single parameter |

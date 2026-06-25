@@ -1,9 +1,11 @@
 # Plot estimated curves from a fitted GH model
 
-Plots hazard, survival, or cumulative hazard curves for one or more
-covariate patterns. Each row of `newdata` becomes a separate coloured
-line; row names serve as legend labels. Confidence bands are drawn as
-dashed lines of the same colour.
+Calls
+[`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md)
+and passes the result to
+[`plot.genhaz_pred()`](https://aaronjehle.github.io/genhaz/reference/plot.genhaz_pred.md).
+Supports all eight prediction types; `ylim` is automatically derived
+from the full range of CI bands so no line is clipped.
 
 ## Usage
 
@@ -13,15 +15,9 @@ plot(
   x,
   newdata,
   times,
-  type = c("hazard", "survival", "cumhaz"),
+  type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
+    "hazard_ratio", "time_ratio"),
   alpha = 0.05,
-  col = NULL,
-  lty = 1,
-  xlab = "Time",
-  ylab = NULL,
-  main = NULL,
-  legend = TRUE,
-  ci = TRUE,
   ...
 )
 ```
@@ -35,8 +31,8 @@ plot(
 
 - newdata:
 
-  A `data.frame` of covariate values. One row per group. Set row names
-  for informative legend labels.
+  A `data.frame` of covariate values. One row per group. Row names
+  become legend labels.
 
 - times:
 
@@ -44,64 +40,40 @@ plot(
 
 - type:
 
-  Quantity to plot: `"hazard"` (default), `"survival"`, or `"cumhaz"`.
+  Quantity to plot. One of `"hazard"` (default), `"survival"`,
+  `"cumhaz"`, `"rmst"`, `"surv_diff"`, `"rmst_diff"`, `"hazard_ratio"`,
+  or `"time_ratio"`. The last four require exactly two rows in
+  `newdata`.
 
 - alpha:
 
   Significance level for confidence bands. Default 0.05.
 
-- col:
-
-  Colour vector (recycled over groups). Defaults to `2, 3, 4, ...` (R's
-  standard colour sequence, skipping black).
-
-- lty:
-
-  Line type for point-estimate curves. Default `1`.
-
-- xlab:
-
-  X-axis label. Default `"Time"`.
-
-- ylab:
-
-  Y-axis label. Derived from `type` when `NULL`.
-
-- main:
-
-  Plot title. Derived from `type` when `NULL`.
-
-- legend:
-
-  Logical; draw a legend when multiple groups are present? Default
-  `TRUE`.
-
-- ci:
-
-  Logical; overlay dashed confidence band lines? Default `TRUE`.
-
 - ...:
 
-  Additional graphical parameters passed to
-  [`graphics::plot()`](https://rdrr.io/r/graphics/plot.default.html).
+  Additional arguments passed to
+  [`plot.genhaz_pred()`](https://aaronjehle.github.io/genhaz/reference/plot.genhaz_pred.md)
+  and then to
+  [`graphics::plot()`](https://rdrr.io/r/graphics/plot.default.html)
+  (e.g. `col`, `lty`, `xlab`, `main`, `xlim`).
 
 ## Value
 
-Invisibly returns the `data.frame` produced by
+Invisibly returns the `"genhaz_pred"` object from
 [`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md).
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-t_grid <- seq(0.01, 8, length.out = 300)
-
-# Hazard (default) for two groups
 nd <- data.frame(X = c(0, 1))
 rownames(nd) <- c("X = 0", "X = 1")
-plot(fit, newdata = nd, times = t_grid)
+t_grid <- seq(0.01, 8, length.out = 300)
 
-# Survival for a single group
-plot(fit, newdata = data.frame(X = 0), times = t_grid, type = "survival")
+plot(fit, newdata = nd, times = t_grid)
+plot(fit, newdata = nd, times = t_grid, type = "survival",
+     col = c("steelblue", "firebrick"))
+plot(fit, newdata = nd, times = t_grid, type = "hazard_ratio",
+     col = "purple")
 } # }
 ```

@@ -16,6 +16,8 @@ Useful links:
 
 - <https://github.com/AaronJehle/genhaz>
 
+- <https://aaronjehle.github.io/genhaz/>
+
 - Report bugs at <https://github.com/AaronJehle/genhaz/issues>
 
 ## Author
