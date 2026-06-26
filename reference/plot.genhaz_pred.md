@@ -2,7 +2,7 @@
 
 Plots the output of
 [`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md)
-— any of the eight prediction types. Each distinct covariate pattern
+— any of the nine prediction types. Each distinct covariate pattern
 becomes a coloured line; confidence bands are drawn as dashed lines of
 the same colour. `ylim` is always derived from the full range of CI
 bands plus the point estimate, so nothing is clipped. Axis labels and
@@ -22,6 +22,7 @@ plot(
   main = NULL,
   legend = TRUE,
   ci = TRUE,
+  ylim = NULL,
   ...
 )
 ```
@@ -62,6 +63,12 @@ plot(
 - ci:
 
   Logical; overlay dashed confidence band lines? Default `TRUE`.
+
+- ylim:
+
+  Numeric length-2 y-axis limits. When `NULL` (default), derived from
+  the full range of the point estimate and both CI bands so nothing is
+  clipped.
 
 - ...:
 

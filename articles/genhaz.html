@@ -155,6 +155,7 @@ e.g. <code>model_type = c("PH", "GH")</code> for two covariates.</p>
 </tbody>
 </table>
 <hr>
+<p>Note: only rc is tested at this point in time.</p>
 </div>
 <div class="section level2">
 <h2 id="real-data-example-melanoma-survival">Real-data example: melanoma survival<a class="anchor" aria-label="anchor" href="#real-data-example-melanoma-survival"></a>
@@ -204,12 +205,12 @@ result:</p>
 <span><span class="va">new_time</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">320</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>   <span class="co"># avoids t = 0 (needed for time_ratio)</span></span>
 <span></span>
 <span><span class="va">nd_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  X      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0L</span>, <span class="fl">1L</span><span class="op">)</span>,</span>
+<span>  X      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  period <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">1L</span><span class="op">)</span>,</span>
 <span>  agegrp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"60-74"</span>, <span class="st">"60-74"</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">mel</span><span class="op">$</span><span class="va">agegrp</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sex    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Male"</span>,  <span class="st">"Male"</span><span class="op">)</span>,  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">mel</span><span class="op">$</span><span class="va">sex</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd_mel</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Localised"</span>, <span class="st">"Non-localised"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd_mel</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Non-Localised"</span>, <span class="st">"Localised"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="results">Results<a class="anchor" aria-label="anchor" href="#results"></a>
@@ -312,10 +313,11 @@ group 60–74, male sex, diagnosed 1985–94.</p>
 <h3 id="time-varying-hazard-ratio">Time-varying hazard ratio<a class="anchor" aria-label="anchor" href="#time-varying-hazard-ratio"></a>
 </h3>
 <p><code>type = "hazard_ratio"</code> gives
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mi>h</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_1(t)/h_2(t)</annotation></semantics></math>
-with a log-scale delta-method CI. Under PH this would be flat; the GH
-model captures the time variation. <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> works directly on
-the <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> result.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">h_1(t)/h_0(t)</annotation></semantics></math>
+(exposed over baseline) with a log-scale delta-method CI. Under PH this
+would be flat; the GH model captures the time variation.
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> works directly on the <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>
+result.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hr_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
 <span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span><span class="op">)</span></span>
@@ -332,10 +334,11 @@ approximately 6 years.</p>
 <h3 id="survival-difference-and-rmst">Survival difference and RMST<a class="anchor" aria-label="anchor" href="#survival-difference-and-rmst"></a>
 </h3>
 <p><code>type = "surv_diff"</code> gives
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>S</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S_1(t) - S_2(t)</annotation></semantics></math>
-on the linear scale; the delta-method accounts for the correlation
-between the two curves. <code>type = "rmst_diff"</code> integrates this
-difference up to each restriction time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>S</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S_1(t) - S_0(t)</annotation></semantics></math>
+(exposed minus baseline) on the linear scale; the delta-method accounts
+for the correlation between the two curves.
+<code>type = "rmst_diff"</code> integrates this difference up to each
+restriction time
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
 via 25-point Gauss-Legendre quadrature.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
@@ -343,21 +346,18 @@ via 25-point Gauss-Legendre quadrature.</p>
 <span>                      times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"surv_diff"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">diff_s_mel</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"S(t | Localised) − S(t | Non-localised)"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"S(t | Non-localised) − S(t | Localised)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="fl">0</span>, lty <span class="op">=</span> <span class="fl">3</span>, col <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="genhaz_files/figure-html/melanoma-differences-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">tau_mel</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">24</span>, <span class="fl">60</span>, <span class="fl">120</span>, <span class="fl">240</span><span class="op">)</span></span>
 <span><span class="va">rmst_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                    times <span class="op">=</span> <span class="va">tau_mel</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span><span class="op">)</span></span>
-<span><span class="va">rmst_mel</span></span>
-<span><span class="co">#&gt;                     pattern time   estimate      lower      upper</span></span>
-<span><span class="co">#&gt; 1 Localised - Non-localised   12  0.8138883  0.6703554  0.9574212</span></span>
-<span><span class="co">#&gt; 2 Localised - Non-localised   24  3.1478871  2.7446971  3.5510771</span></span>
-<span><span class="co">#&gt; 3 Localised - Non-localised   60 11.8855268 10.5725970 13.1984567</span></span>
-<span><span class="co">#&gt; 4 Localised - Non-localised  120 25.1408642 22.0427350 28.2389935</span></span>
-<span><span class="co">#&gt; 5 Localised - Non-localised  240 48.0778932 41.1811933 54.9745930</span></span></code></pre></div>
+<span>                    times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rmst_mel</span>,</span>
+<span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
+<span>     main <span class="op">=</span> <span class="st">"RMST(t | Non-localised) − RMST(t | Localised)"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="fl">0</span>, lty <span class="op">=</span> <span class="fl">3</span>, col <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="genhaz_files/figure-html/melanoma-differences-2.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level3">
 <h3 id="time-ratio">Time ratio<a class="anchor" aria-label="anchor" href="#time-ratio"></a>
@@ -365,22 +365,69 @@ via 25-point Gauss-Legendre quadrature.</p>
 <p><code>type = "time_ratio"</code> gives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mi>/</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">\tau/t</annotation></semantics></math>
 where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>S</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S_2(\tau) = S_1(t)</annotation></semantics></math>:
-how much longer does the non-localised group need to reach the same
-survival level as the localised group at time
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>?
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>S</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S_0(\tau) = S_1(t)</annotation></semantics></math>
+(the relation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><msub><mi>x</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>S</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">S(t\mid x_1)=S_0(\tau(t))</annotation></semantics></math>):
+the baseline time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
+at which the localised (baseline, group 0, row 2) group reaches the
+survival level the non-localised (exposed, group 1, row 1) group has at
+time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>.
+The non-localised group fares worse, so the localised group needs
+<em>longer</em> to fall that far, giving
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo>&gt;</mo><mi>t</mi></mrow><annotation encoding="application/x-tex">\tau &gt; t</annotation></semantics></math>.
 Each
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
 is found via <code>uniroot</code>; the delta-method CI uses the implicit
-function theorem. This is computationally intensive, so the chunk is not
-evaluated during build.</p>
+function theorem. The search is capped at the model support
+<code>exp(max(fit$knots))</code> (<code>tau_max</code>); the localised
+baseline survival plateaus above the non-localised level, so beyond an
+early window no
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
+exists (returned <code>NA</code>) — we therefore use an in-support
+grid.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tr_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">240</span>, by <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"time_ratio"</span><span class="op">)</span></span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"time_ratio"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tr_mel</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Time ratio — non-localised vs localised"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="fl">1</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey50"</span><span class="op">)</span></span></code></pre></div>
-<hr>
+<p><img src="genhaz_files/figure-html/melanoma-time-ratio-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level3">
+<h3 id="acceleration-factor">Acceleration factor<a class="anchor" aria-label="anchor" href="#acceleration-factor"></a>
+</h3>
+<p><code>type = "acc_factor"</code> reports the time-varying
+acceleration <strong>effect</strong> on the log scale,
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msup><mi>τ</mi><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mi>h</mi><mn>1</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mi>h</mi><mn>0</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">f(t) = \log \tau'(t) = \log h_1(t) - \log h_0(\tau(t)),</annotation></semantics></math>
+the time-varying analogue of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mn>1</mn></msub><annotation encoding="application/x-tex">\beta_1</annotation></semantics></math>:
+it is defined so that
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>∣</mo><msub><mi>x</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>S</mi><mn>0</mn></msub><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mo>∫</mo><mn>0</mn><mi>t</mi></msubsup><msup><mi>e</mi><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>X</mi></mrow></msup><mspace width="0.167em"></mspace><mi>d</mi><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">S(t \mid x_1) = S_0\!\left(\int_0^t e^{f(u)\,X}\,du\right),</annotation></semantics></math>
+i.e. the warped time is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>t</mi></msubsup><msup><mi>e</mi><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mi>X</mi></mrow></msup><mi>d</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">\tau(t)=\int_0^t e^{f(u)X}du</annotation></semantics></math>
+with instantaneous rate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>e</mi><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>X</mi></mrow></msup><mo>=</mo><msup><mi>τ</mi><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">e^{f(t)X}=\tau'(t)</annotation></semantics></math>,
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>β</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">f(t)=\beta_1</annotation></semantics></math>
+in the constant-AFT limit. So
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">f(t)</annotation></semantics></math>
+is directly comparable to the fitted
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̂</mo></mover><mn>1</mn></msub><annotation encoding="application/x-tex">\hat\beta_1</annotation></semantics></math>
+(here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≈</mo><mn>1.14</mn></mrow><annotation encoding="application/x-tex">\approx 1.14</annotation></semantics></math>).
+The delta-method CI uses the implicit function theorem together with the
+hazard time-derivative <code>post(..., "dh_dt")</code>; the same support
+cap applies, so we use the in-support grid.</p>
+<p>This is a work in progress.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">af_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"acc_factor"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">af_mel</span>, col <span class="op">=</span> <span class="st">"purple"</span>,</span>
+<span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Acceleration effect f(t) — non-localised vs localised"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="va">fit_melanoma</span><span class="op">$</span><span class="va">par</span><span class="op">[</span><span class="st">"beta1_X"</span><span class="op">]</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey50"</span><span class="op">)</span>  <span class="co"># constant-AFT beta1</span></span></code></pre></div>
+<p><img src="genhaz_files/figure-html/melanoma-acc-factor-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 </div>
 <div class="section level2">
@@ -395,18 +442,18 @@ the corresponding true
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>S</mi><annotation encoding="application/x-tex">S</annotation></semantics></math>
 on a grid for comparison with fitted estimates.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_scenario.html">sim_scenario</a></span><span class="op">(</span>scenario <span class="op">=</span> <span class="fl">1</span>, beta1 <span class="op">=</span> <span class="fl">0.5</span>, beta2 <span class="op">=</span> <span class="fl">0.5</span>, n <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">82359</span><span class="op">)</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_scenario.html">sim_scenario</a></span><span class="op">(</span>scenario <span class="op">=</span> <span class="fl">1</span>, beta1 <span class="op">=</span> <span class="fl">0.5</span>, beta2 <span class="op">=</span> <span class="fl">0.5</span>, n <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        time X event    T_true</span></span>
-<span><span class="co">#&gt; 1 1.5137723 1     1 1.5137723</span></span>
-<span><span class="co">#&gt; 2 0.6274633 1     0 1.4308403</span></span>
-<span><span class="co">#&gt; 3 1.9735251 0     1 1.9735251</span></span>
-<span><span class="co">#&gt; 4 0.6619293 1     1 0.6619293</span></span>
-<span><span class="co">#&gt; 5 1.5659811 1     1 1.5659811</span></span>
-<span><span class="co">#&gt; 6 0.2222732 1     0 0.5267612</span></span></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; 1 2.1526916 0     1 2.1526916</span></span>
+<span><span class="co">#&gt; 2 3.1407413 0     1 3.1407413</span></span>
+<span><span class="co">#&gt; 3 0.4359473 0     0 1.8678244</span></span>
+<span><span class="co">#&gt; 4 1.5510083 1     1 1.5510083</span></span>
+<span><span class="co">#&gt; 5 0.4094107 0     1 0.4094107</span></span>
+<span><span class="co">#&gt; 6 1.2020419 1     1 1.2020419</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_genhaz.html">fit_genhaz</a></span><span class="op">(</span></span>
 <span>  surv       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">time</span>, <span class="va">dat</span><span class="op">$</span><span class="va">event</span><span class="op">)</span>,</span>
 <span>  formula    <span class="op">=</span> <span class="op">~</span> <span class="va">X</span>,</span>
@@ -417,20 +464,20 @@ on a grid for comparison with fitted estimates.</p>
 <span>  tol_LCV    <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  lcv_method <span class="op">=</span> <span class="st">"optimize"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Fitted generalized hazard model (genhaz)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Model type : GH</span></span>
 <span><span class="co">#&gt;   Knots      : 6 (log-time scale)</span></span>
-<span><span class="co">#&gt;   Lambda     : 362.7</span></span>
-<span><span class="co">#&gt;   EDF        : 5.89</span></span>
-<span><span class="co">#&gt;   AIC        : 877.97</span></span>
+<span><span class="co">#&gt;   Lambda     : 287.4</span></span>
+<span><span class="co">#&gt;   EDF        : 6.91</span></span>
+<span><span class="co">#&gt;   AIC        : 3521.11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariate coefficients (Wald 95% CI):</span></span>
 <span><span class="co">#&gt;         Estimate Std.Err      z  p.value lower.95% upper.95%</span></span>
-<span><span class="co">#&gt; beta1_X   0.2033  0.1521 1.3364 0.181419   -0.0949    0.5015</span></span>
-<span><span class="co">#&gt; beta2_X   1.2617  0.3713 3.3983 0.000678    0.5340    1.9894</span></span></code></pre></div>
+<span><span class="co">#&gt; beta1_X   0.4559  0.0465 9.8063  &lt; 2e-16    0.3647    0.5470</span></span>
+<span><span class="co">#&gt; beta2_X   0.6135  0.1127 5.4424 5.26e-08    0.3926    0.8345</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="inference">Inference<a class="anchor" aria-label="anchor" href="#inference"></a>
 </h3>
@@ -438,18 +485,18 @@ on a grid for comparison with fitted estimates.</p>
 <code><a href="../reference/waldCI_minus.html">waldCI_minus()</a></code> gives a CI for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>1</mn></msub><mo>−</mo><msub><mi>β</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\beta_1 - \beta_2</annotation></semantics></math>
 (accounting for their covariance).</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta1_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       lower       upper </span></span>
-<span><span class="co">#&gt; -0.09487388  0.50153255</span></span>
+<span><span class="co">#&gt;     lower     upper </span></span>
+<span><span class="co">#&gt; 0.3647416 0.5469618</span></span>
 <span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     lower     upper </span></span>
-<span><span class="co">#&gt; 0.5340138 1.9894184</span></span>
+<span><span class="co">#&gt; 0.3925786 0.8344796</span></span>
 <span><span class="fu"><a href="../reference/waldCI_minus.html">waldCI_minus</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta1_X"</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       lower       upper </span></span>
-<span><span class="co">#&gt; -2.07437271 -0.04240081</span></span></code></pre></div>
+<span><span class="co">#&gt;      lower      upper </span></span>
+<span><span class="co">#&gt; -0.4629392  0.1475844</span></span></code></pre></div>
 <p>Fit a restricted (PH) model and test against the full GH model:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_ph</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_genhaz.html">fit_genhaz</a></span><span class="op">(</span></span>
 <span>  surv       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">time</span>, <span class="va">dat</span><span class="op">$</span><span class="va">event</span><span class="op">)</span>,</span>
 <span>  formula    <span class="op">=</span> <span class="op">~</span> <span class="va">X</span>,</span>
@@ -463,7 +510,7 @@ on a grid for comparison with fitted estimates.</p>
 <span></span>
 <span><span class="fu"><a href="../reference/LR.html">LR</a></span><span class="op">(</span><span class="va">fit_ph</span>, <span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; LR-statistic      p_value </span></span>
-<span><span class="co">#&gt;   5.68044586   0.01715501</span></span></code></pre></div>
+<span><span class="co">#&gt; 6.760761e+01 1.994956e-16</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -504,7 +551,7 @@ available via <code>lcv_method</code>:</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># First-order gradient (faster)</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_genhaz.html">fit_genhaz</a></span><span class="op">(</span><span class="va">...</span>, profile <span class="op">=</span> <span class="cn">TRUE</span>, lcv_method <span class="op">=</span> <span class="st">"approx"</span><span class="op">)</span></span>
 <span></span>

@@ -20,10 +20,10 @@ genhaz_work(
   Z,
   event = NULL,
   lambda = 1,
-  res = c("log_h", "gradient_log_h", "hessian_log_h", "h", "gradient_h", "hessian_h",
-    "H", "gradient_H", "hessian_H", "negll", "negll_upen", "scores", "gradient_negll",
-    "hessian_negll", "hessian_negll_upen", "basis", "edf", "LCV", "dLCV", "dLCV_full",
-    "fit", "fit_LCV"),
+  res = c("log_h", "gradient_log_h", "hessian_log_h", "dlogh_dt", "dh_dt", "h",
+    "gradient_h", "hessian_h", "H", "gradient_H", "hessian_H", "negll", "negll_upen",
+    "scores", "gradient_negll", "hessian_negll", "hessian_negll_upen", "basis", "edf",
+    "LCV", "dLCV", "dLCV_full", "fit", "fit_LCV"),
   model_type = "GH",
   time2 = NULL,
   cens_type = "rc",
@@ -74,18 +74,19 @@ genhaz_work(
 - res:
 
   Character string selecting the quantity to return. One of `"log_h"`,
-  `"gradient_log_h"`, `"hessian_log_h"`, `"h"`, `"gradient_h"`,
-  `"hessian_h"`, `"H"`, `"gradient_H"`, `"hessian_H"`, `"negll"`,
-  `"negll_upen"`, `"scores"`, `"gradient_negll"`, `"hessian_negll"`,
-  `"hessian_negll_upen"`, `"basis"`, `"edf"`, `"LCV"`, `"dLCV"`,
-  `"dLCV_full"`, `"fit"`, or `"fit_LCV"`. The last two fit a model:
-  `"fit"` at a fixed `lambda`, `"fit_LCV"` after profiling `lambda` via
-  LCV. `"dLCV"` returns the first-order analytical derivative of LCV
-  w.r.t. `log(lambda)` (evaluated at the MLE for the given `lambda`).
-  `"dLCV_full"` returns the same derivative including the
-  third-derivative correction term from the unpenalised Hessian's
-  dependence on `lambda` (supports `"rc"` and `"lt_rc"`; falls back to
-  `"dLCV"` for `"ic"`).
+  `"gradient_log_h"`, `"hessian_log_h"`, `"dlogh_dt"` (derivative of the
+  log-hazard w.r.t. time), `"dh_dt"` (derivative of the hazard w.r.t.
+  time), `"h"`, `"gradient_h"`, `"hessian_h"`, `"H"`, `"gradient_H"`,
+  `"hessian_H"`, `"negll"`, `"negll_upen"`, `"scores"`,
+  `"gradient_negll"`, `"hessian_negll"`, `"hessian_negll_upen"`,
+  `"basis"`, `"edf"`, `"LCV"`, `"dLCV"`, `"dLCV_full"`, `"fit"`, or
+  `"fit_LCV"`. The last two fit a model: `"fit"` at a fixed `lambda`,
+  `"fit_LCV"` after profiling `lambda` via LCV. `"dLCV"` returns the
+  first-order analytical derivative of LCV w.r.t. `log(lambda)`
+  (evaluated at the MLE for the given `lambda`). `"dLCV_full"` returns
+  the same derivative including the third-derivative correction term
+  from the unpenalised Hessian's dependence on `lambda` (supports `"rc"`
+  and `"lt_rc"`; falls back to `"dLCV"` for `"ic"`).
 
 - model_type:
 

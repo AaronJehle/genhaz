@@ -46,6 +46,8 @@ e.g. `model_type = c("PH", "GH")` for two covariates.
 
 ------------------------------------------------------------------------
 
+Note: only rc is tested at this point in time.
+
 ## Real-data example: melanoma survival
 
 We use the
@@ -102,12 +104,12 @@ mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
 new_time   <- seq(0.5, 320, by = 0.5)   # avoids t = 0 (needed for time_ratio)
 
 nd_mel <- data.frame(
-  X      = c(0L, 1L),
+  X      = c(1L, 0L),
   period = c(1L, 1L),
   agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
   sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
 )
-rownames(nd_mel) <- c("Localised", "Non-localised")
+rownames(nd_mel) <- c("Non-Localised", "Localised")
 ```
 
 ### Results
@@ -222,11 +224,11 @@ plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "survival",
 
 ### Time-varying hazard ratio
 
-`type = "hazard_ratio"` gives $`h_1(t)/h_2(t)`$ with a log-scale
-delta-method CI. Under PH this would be flat; the GH model captures the
-time variation. [`plot()`](https://rdrr.io/r/graphics/plot.default.html)
-works directly on the
-[`predict()`](https://rdrr.io/r/stats/predict.html) result.
+`type = "hazard_ratio"` gives $`h_1(t)/h_0(t)`$ (exposed over baseline)
+with a log-scale delta-method CI. Under PH this would be flat; the GH
+model captures the time variation.
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) works directly
+on the [`predict()`](https://rdrr.io/r/stats/predict.html) result.
 
 ``` r
 
@@ -246,10 +248,11 @@ approximately 6 years.
 
 ### Survival difference and RMST
 
-`type = "surv_diff"` gives $`S_1(t) - S_2(t)`$ on the linear scale; the
-delta-method accounts for the correlation between the two curves.
-`type = "rmst_diff"` integrates this difference up to each restriction
-time $`\tau`$ via 25-point Gauss-Legendre quadrature.
+`type = "surv_diff"` gives $`S_1(t) - S_0(t)`$ (exposed minus baseline)
+on the linear scale; the delta-method accounts for the correlation
+between the two curves. `type = "rmst_diff"` integrates this difference
+up to each restriction time $`\tau`$ via 25-point Gauss-Legendre
+quadrature.
 
 ``` r
 
@@ -257,7 +260,7 @@ diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
                       times = new_time, type = "surv_diff")
 plot(diff_s_mel,
      xlab = "Time (months)",
-     main = "S(t | Localised) − S(t | Non-localised)")
+     main = "S(t | Non-localised) − S(t | Localised)")
 abline(h = 0, lty = 3, col = "grey70")
 ```
 
@@ -266,37 +269,72 @@ abline(h = 0, lty = 3, col = "grey70")
 ``` r
 
 
-tau_mel  <- c(12, 24, 60, 120, 240)
 rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
-                    times = tau_mel, type = "rmst_diff")
-rmst_mel
-#>                     pattern time   estimate      lower      upper
-#> 1 Localised - Non-localised   12  0.8138883  0.6703554  0.9574212
-#> 2 Localised - Non-localised   24  3.1478871  2.7446971  3.5510771
-#> 3 Localised - Non-localised   60 11.8855268 10.5725970 13.1984567
-#> 4 Localised - Non-localised  120 25.1408642 22.0427350 28.2389935
-#> 5 Localised - Non-localised  240 48.0778932 41.1811933 54.9745930
+                    times = new_time, type = "rmst_diff")
+plot(rmst_mel,
+     xlab = "Time (months)",
+     main = "RMST(t | Non-localised) − RMST(t | Localised)")
+abline(h = 0, lty = 3, col = "grey70")
 ```
+
+![](genhaz_files/figure-html/melanoma-differences-2.png)
 
 ### Time ratio
 
-`type = "time_ratio"` gives $`\tau/t`$ where $`S_2(\tau) = S_1(t)`$: how
-much longer does the non-localised group need to reach the same survival
-level as the localised group at time $`t`$? Each $`\tau`$ is found via
-`uniroot`; the delta-method CI uses the implicit function theorem. This
-is computationally intensive, so the chunk is not evaluated during
-build.
+`type = "time_ratio"` gives $`\tau/t`$ where $`S_0(\tau) = S_1(t)`$ (the
+relation $`S(t\mid x_1)=S_0(\tau(t))`$): the baseline time $`\tau`$ at
+which the localised (baseline, group 0, row 2) group reaches the
+survival level the non-localised (exposed, group 1, row 1) group has at
+time $`t`$. The non-localised group fares worse, so the localised group
+needs *longer* to fall that far, giving $`\tau > t`$. Each $`\tau`$ is
+found via `uniroot`; the delta-method CI uses the implicit function
+theorem. The search is capped at the model support `exp(max(fit$knots))`
+(`tau_max`); the localised baseline survival plateaus above the
+non-localised level, so beyond an early window no $`\tau`$ exists
+(returned `NA`) — we therefore use an in-support grid.
 
 ``` r
 
 tr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(6, 240, by = 6), type = "time_ratio")
+                  times = seq(2, 24, by = 2), type = "time_ratio")
 plot(tr_mel, col = "darkorange",
      xlab = "Time (months)", main = "Time ratio — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
 ```
 
-------------------------------------------------------------------------
+![](genhaz_files/figure-html/melanoma-time-ratio-1.png)
+
+### Acceleration factor
+
+`type = "acc_factor"` reports the time-varying acceleration **effect**
+on the log scale,
+``` math
+f(t) = \log \tau'(t) = \log h_1(t) - \log h_0(\tau(t)),
+```
+the time-varying analogue of $`\beta_1`$: it is defined so that
+``` math
+S(t \mid x_1) = S_0\!\left(\int_0^t e^{f(u)\,X}\,du\right),
+```
+i.e. the warped time is $`\tau(t)=\int_0^t e^{f(u)X}du`$ with
+instantaneous rate $`e^{f(t)X}=\tau'(t)`$, and $`f(t)=\beta_1`$ in the
+constant-AFT limit. So $`f(t)`$ is directly comparable to the fitted
+$`\hat\beta_1`$ (here $`\approx 1.14`$). The delta-method CI uses the
+implicit function theorem together with the hazard time-derivative
+`post(..., "dh_dt")`; the same support cap applies, so we use the
+in-support grid.
+
+This is a work in progress.
+
+``` r
+
+af_mel <- predict(fit_melanoma, newdata = nd_mel,
+                  times = seq(2, 24, by = 2), type = "acc_factor")
+plot(af_mel, col = "purple",
+     xlab = "Time (months)", main = "Acceleration effect f(t) — non-localised vs localised")
+abline(h = fit_melanoma$par["beta1_X"], lty = 2, col = "grey50")  # constant-AFT beta1
+```
+
+![](genhaz_files/figure-html/melanoma-acc-factor-1.png)
 
 ## Simulation and benchmarking
 
@@ -310,16 +348,16 @@ comparison with fitted estimates.
 
 ``` r
 
-set.seed(42)
-dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+set.seed(82359)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 2000)
 head(dat)
 #>        time X event    T_true
-#> 1 1.5137723 1     1 1.5137723
-#> 2 0.6274633 1     0 1.4308403
-#> 3 1.9735251 0     1 1.9735251
-#> 4 0.6619293 1     1 0.6619293
-#> 5 1.5659811 1     1 1.5659811
-#> 6 0.2222732 1     0 0.5267612
+#> 1 2.1526916 0     1 2.1526916
+#> 2 3.1407413 0     1 3.1407413
+#> 3 0.4359473 0     0 1.8678244
+#> 4 1.5510083 1     1 1.5510083
+#> 5 0.4094107 0     1 0.4094107
+#> 6 1.2020419 1     1 1.2020419
 ```
 
 ``` r
@@ -343,14 +381,14 @@ print(fit)
 #> 
 #>   Model type : GH
 #>   Knots      : 6 (log-time scale)
-#>   Lambda     : 362.7
-#>   EDF        : 5.89
-#>   AIC        : 877.97
+#>   Lambda     : 287.4
+#>   EDF        : 6.91
+#>   AIC        : 3521.11
 #> 
 #> Covariate coefficients (Wald 95% CI):
 #>         Estimate Std.Err      z  p.value lower.95% upper.95%
-#> beta1_X   0.2033  0.1521 1.3364 0.181419   -0.0949    0.5015
-#> beta2_X   1.2617  0.3713 3.3983 0.000678    0.5340    1.9894
+#> beta1_X   0.4559  0.0465 9.8063  < 2e-16    0.3647    0.5470
+#> beta2_X   0.6135  0.1127 5.4424 5.26e-08    0.3926    0.8345
 ```
 
 ### Inference
@@ -363,14 +401,14 @@ gives a CI for $`\beta_1 - \beta_2`$ (accounting for their covariance).
 ``` r
 
 waldCI(fit, "beta1_X")
-#>       lower       upper 
-#> -0.09487388  0.50153255
+#>     lower     upper 
+#> 0.3647416 0.5469618
 waldCI(fit, "beta2_X")
 #>     lower     upper 
-#> 0.5340138 1.9894184
+#> 0.3925786 0.8344796
 waldCI_minus(fit, "beta1_X", "beta2_X")
-#>       lower       upper 
-#> -2.07437271 -0.04240081
+#>      lower      upper 
+#> -0.4629392  0.1475844
 ```
 
 Fit a restricted (PH) model and test against the full GH model:
@@ -390,7 +428,7 @@ fit_ph <- fit_genhaz(
 
 LR(fit_ph, fit)
 #> LR-statistic      p_value 
-#>   5.68044586   0.01715501
+#> 6.760761e+01 1.994956e-16
 ```
 
 ------------------------------------------------------------------------

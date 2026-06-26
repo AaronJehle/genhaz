@@ -50,8 +50,10 @@ Only the requested quantity is computed.</p>
 <span>  <span class="va">newdata</span>,</span>
 <span>  <span class="va">times</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hazard"</span>, <span class="st">"survival"</span>, <span class="st">"cumhaz"</span>, <span class="st">"rmst"</span>, <span class="st">"surv_diff"</span>, <span class="st">"rmst_diff"</span>,</span>
-<span>    <span class="st">"hazard_ratio"</span>, <span class="st">"time_ratio"</span><span class="op">)</span>,</span>
+<span>    <span class="st">"hazard_ratio"</span>, <span class="st">"time_ratio"</span>, <span class="st">"acc_factor"</span><span class="op">)</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tau_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -67,8 +69,10 @@ Only the requested quantity is computed.</p>
 <dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
 <dd><p>A <code>data.frame</code> of covariate values. Each row defines one
 covariate pattern; row names are used as group labels in the output.
-Must contain all variables referenced in the model formula. For
-<code>"surv_diff"</code> and <code>"rmst_diff"</code>, exactly two rows are required.</p></dd>
+Must contain all variables referenced in the model formula. For the
+two-group comparison types, exactly two rows are required: <strong>row 1 is the
+exposed group (group 1)</strong> and <strong>row 2 the unexposed/baseline group
+(group 0)</strong>.</p></dd>
 
 
 <dt id="arg-times">times<a class="anchor" aria-label="anchor" href="#arg-times"></a></dt>
@@ -80,13 +84,37 @@ is evaluated.</p></dd>
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
 <dd><p>Quantity to predict: <code>"hazard"</code> (default), <code>"survival"</code>,
 <code>"cumhaz"</code> (cumulative hazard), <code>"rmst"</code> (restricted mean survival time),
-<code>"surv_diff"</code> (survival difference S1−S2), <code>"rmst_diff"</code> (RMST
-difference), <code>"hazard_ratio"</code> (h1/h2), or <code>"time_ratio"</code> (tau/t where
-S2(tau) = S1(t)). The last four require exactly two rows in <code>newdata</code>.</p></dd>
+<code>"surv_diff"</code> (survival difference S1−S0), <code>"rmst_diff"</code> (RMST
+difference), <code>"hazard_ratio"</code> (h1/h0), <code>"time_ratio"</code> (tau/t where
+S0(tau) = S1(t): the baseline time tau at which the baseline group reaches
+the comparison group's survival at t), or <code>"acc_factor"</code> (the time-varying
+acceleration <em>effect</em> on the log scale, f(t) = log tau'(t) =
+log h1(t) - log h0(tau), where tau is defined by H0(tau) = H1(t); this
+satisfies S(t | x1) = S0(integral_0^t exp(f(u) X) du), i.e. tau(t) =
+integral_0^t exp(f(u) X) du with instantaneous rate exp(f(t) X) = tau'(t),
+so f(t) = beta1 in the constant-AFT limit and is directly comparable to
+beta1). The last five require exactly two rows in <code>newdata</code>.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
 <dd><p>Significance level for confidence intervals. Default 0.05.</p></dd>
+
+
+<dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>
+<dd><p>Logical; compute confidence intervals? When <code>FALSE</code>, only the
+point <code>estimate</code> is computed (skipping the delta-method gradients and any
+root-solving overhead they require) and the <code>lower</code>/<code>upper</code> columns are
+returned as <code>NA</code>. Default <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-tau-max">tau_max<a class="anchor" aria-label="anchor" href="#arg-tau-max"></a></dt>
+<dd><p>Upper bound for the equal-cumulative-hazard time tau solved by
+<code>"time_ratio"</code> and <code>"acc_factor"</code>. Defaults to the model support
+<code>exp(max(object$knots))</code> (the largest knot, beyond which the spline is pure
+linear extrapolation). When the baseline group does not reach the
+comparison group's cumulative hazard within <code>[0, tau_max]</code>, the warp is not
+identified and the corresponding rows are returned as <code>NA</code> with a warning;
+pass a larger value to allow extrapolation. Ignored by all other types.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -96,19 +124,20 @@ S2(tau) = S1(t)). The last four require exactly two rows in <code>newdata</code>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> of class <code>c("genhaz_pred", "data.frame")</code> with
-columns <code>pattern</code>, <code>time</code>, <code>estimate</code>, <code>lower</code>, <code>upper</code>. A <code>pred_type</code>
-attribute records which quantity was computed; <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> uses this to set
-axis labels automatically. For per-group types rows are grouped by
-covariate pattern; for difference types a single block labelled
-<code>"group1 - group2"</code> is returned.</p>
+columns <code>pattern</code>, <code>time</code>, <code>estimate</code>, <code>lower</code>, <code>upper</code> (the latter two are
+<code>NA</code> when <code>ci = FALSE</code>). A <code>pred_type</code> attribute records which quantity was
+computed; <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> uses this to set axis labels automatically. For
+per-group types rows are grouped by covariate pattern; for two-group types
+a single block labelled <code>"group1 - group0"</code> (exposed - unexposed) is
+returned.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">t_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">8</span>, length.out <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Unexposed"</span>, <span class="st">"Exposed"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Exposed"</span>, <span class="st">"Unexposed"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"rmst"</span><span class="op">)</span></span></span>
@@ -116,6 +145,7 @@ covariate pattern; for difference types a single block labelled
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"time_ratio"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"acc_factor"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

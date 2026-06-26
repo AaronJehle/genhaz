@@ -4,8 +4,8 @@ Calls
 [`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md)
 and passes the result to
 [`plot.genhaz_pred()`](https://aaronjehle.github.io/genhaz/reference/plot.genhaz_pred.md).
-Supports all eight prediction types; `ylim` is automatically derived
-from the full range of CI bands so no line is clipped.
+Supports all nine prediction types; `ylim` is automatically derived from
+the full range of CI bands so no line is clipped.
 
 ## Usage
 
@@ -16,8 +16,10 @@ plot(
   newdata,
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
-    "hazard_ratio", "time_ratio"),
+    "hazard_ratio", "time_ratio", "acc_factor"),
   alpha = 0.05,
+  ci = TRUE,
+  tau_max = NULL,
   ...
 )
 ```
@@ -42,12 +44,24 @@ plot(
 
   Quantity to plot. One of `"hazard"` (default), `"survival"`,
   `"cumhaz"`, `"rmst"`, `"surv_diff"`, `"rmst_diff"`, `"hazard_ratio"`,
-  or `"time_ratio"`. The last four require exactly two rows in
-  `newdata`.
+  `"time_ratio"`, or `"acc_factor"`. The last five require exactly two
+  rows in `newdata`.
 
 - alpha:
 
   Significance level for confidence bands. Default 0.05.
+
+- ci:
+
+  Logical; compute and draw confidence bands? When `FALSE`, only the
+  point estimate is computed (faster) and plotted. Default `TRUE`.
+
+- tau_max:
+
+  Passed to
+  [`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md);
+  upper bound for the time warp used by `"time_ratio"` and
+  `"acc_factor"`. Default `NULL` (model support).
 
 - ...:
 
