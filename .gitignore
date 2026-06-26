@@ -14,3 +14,8 @@ genhaz/src/*.dll
 genhaz/src/*.so
 genhaz/src/symbols.rds
 genhaz/src/tmp.def
+src/*.o
+src/*.dll
+src/*.so
+src/symbols.rds
+src/tmp.def
