@@ -67,7 +67,7 @@ library(genhaz)
 library(survival)
 
 set.seed(42)
-dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 2000)
 
 # Fit a GH model with automatic smoothing (LCV)
 fit <- fit_genhaz(
@@ -112,28 +112,33 @@ summary(fit)      # as above plus exponentiated estimates exp(beta1), exp(beta2)
 one row of `newdata` per covariate pattern, row names become group labels:
 
 ```r
-nd <- data.frame(X = c(0, 1))
-rownames(nd) <- c("X = 0", "X = 1")
+nd <- data.frame(X = c(1, 0))            # row 1 = exposed (group 1), row 2 = baseline (group 0)
+rownames(nd) <- c("Exposed", "Unexposed")
 
 pred <- predict(fit, newdata = nd, times = t_grid, type = "survival")
 # type = "hazard" | "survival" | "cumhaz" | "rmst"
-#      | "surv_diff" | "rmst_diff" | "hazard_ratio" | "time_ratio"
+#      | "surv_diff" | "rmst_diff" | "hazard_ratio" | "time_ratio" | "acc_factor"
 # returns a data.frame: pattern | time | estimate | lower | upper
 ```
 
-The four two-group types require exactly two rows in `newdata`. Results are
-labelled `"group1 - group2"` with delta-method confidence intervals:
+The five two-group types require exactly two rows in `newdata`: **row 1 is the
+exposed group (group 1)** and **row 2 the unexposed/baseline group (group 0)**.
+Results are labelled `"group1 - group0"` with delta-method confidence intervals
+(pass `ci = FALSE` to skip the CI computation and return only the estimate):
 
 ```r
 tau_grid <- c(2, 4, 6, 8)
 
-predict(fit, newdata = nd, times = t_grid,  type = "surv_diff")    # S1(t) - S2(t)
-predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")   # RMST1 - RMST2
-predict(fit, newdata = nd, times = t_grid,  type = "hazard_ratio") # h1(t) / h2(t)
-predict(fit, newdata = nd, times = t_grid,  type = "time_ratio")   # tau/t: S2(tau)=S1(t)
+predict(fit, newdata = nd, times = t_grid,  type = "surv_diff")    # S1(t) - S0(t)
+predict(fit, newdata = nd, times = tau_grid, type = "rmst_diff")   # RMST1 - RMST0
+predict(fit, newdata = nd, times = t_grid,  type = "hazard_ratio") # h1(t) / h0(t)
+predict(fit, newdata = nd, times = t_grid,  type = "time_ratio")   # tau/t: S0(tau)=S1(t)
+predict(fit, newdata = nd, times = t_grid,  type = "acc_factor")   # f(t)=log tau'(t): S(t|x)=S0(int exp(f*X))
 ```
 
-**Plot** with automatic colours and delta-method confidence bands:
+acc_factor is work in progress
+
+**Plot** with automatic colours and delta-method confidence intervals:
 
 ```r
 plot(fit, newdata = nd, times = t_grid)                  # hazard (default)
@@ -166,6 +171,8 @@ Mixed models are supported via a vector, e.g.
 | `Surv(time, event)` | Right-censoring | `"rc"` |
 | `Surv(start, stop, event)` | Left-truncation + right-censoring | `"lt_rc"` |
 | `Surv(t1, t2, type="interval2")` | Interval censoring | `"ic"` |
+
+Note: only the right-censoring type has been properly tested so far.
 
 ---
 
@@ -322,8 +329,8 @@ Three optimisation strategies are available via the `lcv_method` argument:
 
 | `lcv_method` | Method | Notes |
 |---|---|---|
-| `"full"` (default) | Root-find on full LCV gradient (third-derivative of log-likelihood correction) | Accurate |
-| `"approx"` | Root-find on approximate LCV gradient | Faster |
+| `"full"` (default) | Root-find on full LCV gradient (including third-derivative of log-likelihood) | Accurate |
+| `"approx"` | Root-find on approximate LCV gradient (ignoring third-derivative of log-likelihood)| Faster |
 | `"optimize"` | Direct `optimize()` on LCV, no gradient | Gradient-free |
 
 ```r

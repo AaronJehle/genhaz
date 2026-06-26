@@ -41,7 +41,9 @@ gauss_legendre <- function(n) {
 #'   Required for fitting.
 #' @param lambda Non-negative smoothing parameter for the spline penalty.
 #' @param res Character string selecting the quantity to return. One of
-#'   `"log_h"`, `"gradient_log_h"`, `"hessian_log_h"`, `"h"`,
+#'   `"log_h"`, `"gradient_log_h"`, `"hessian_log_h"`, `"dlogh_dt"`
+#'   (derivative of the log-hazard w.r.t. time), `"dh_dt"` (derivative of the
+#'   hazard w.r.t. time), `"h"`,
 #'   `"gradient_h"`, `"hessian_h"`, `"H"`, `"gradient_H"`, `"hessian_H"`,
 #'   `"negll"`, `"negll_upen"`, `"scores"`, `"gradient_negll"`,
 #'   `"hessian_negll"`, `"hessian_negll_upen"`, `"basis"`, `"edf"`, `"LCV"`,
@@ -95,6 +97,7 @@ gauss_legendre <- function(n) {
 #' @export
 genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
                         res = c("log_h", "gradient_log_h", "hessian_log_h",
+                                "dlogh_dt", "dh_dt",
                                 "h", "gradient_h", "hessian_h",
                                 "H", "gradient_H", "hessian_H",
                                 "negll", "negll_upen", "scores",
@@ -217,6 +220,21 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     drop(B(log(time_arg + 1e-10) + eta1(theta)) %*% beta0 + theta[1] + eta2(theta))
   }
   h_fn <- function(theta, time_arg) exp(log_h(theta, time_arg))
+
+  # Time-derivative of the log-hazard (and hazard) at fixed theta and X.
+  # log h(t|x) = B(log(t) + eta1)^T beta0 + intercept + eta2, so
+  #   d log h / dt = (B'(log(t) + eta1)^T beta0) * d/dt[log(t + eps)]
+  #               = (B'(log(t) + eta1)^T beta0) / (t + eps).
+  # d h / dt = h(t|x) * d log h / dt. Needed for the delta-method CI of the
+  # time-varying acceleration factor (see R/generics.R, type = "acc_factor").
+  dlogh_dt <- function(theta, time_arg) {
+    beta0   <- theta[2:nb0]
+    B_prime <- B(log(time_arg + 1e-10) + eta1(theta), derivs = 1L)
+    drop(B_prime %*% beta0) / (time_arg + 1e-10)
+  }
+  dh_dt <- function(theta, time_arg) {
+    h_fn(theta, time_arg) * dlogh_dt(theta, time_arg)
+  }
 
   Quadrature <- function(f, theta, time_arg) {
     Integral <- 0
@@ -828,6 +846,8 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     log_h          = log_h(theta, time),
     gradient_log_h = gradient_log_h(theta, time),
     hessian_log_h  = hessian_log_h(theta, time),
+    dlogh_dt       = dlogh_dt(theta, time),
+    dh_dt          = dh_dt(theta, time),
     h              = h_fn(theta, time),
     gradient_h     = gradient_h(theta, time),
     hessian_h      = hessian_h(theta, time),

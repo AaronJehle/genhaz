@@ -12,10 +12,10 @@ genhaz_work(
   Z,
   event = NULL,
   lambda = 1,
-  res = c("log_h", "gradient_log_h", "hessian_log_h", "h", "gradient_h", "hessian_h",
-    "H", "gradient_H", "hessian_H", "negll", "negll_upen", "scores", "gradient_negll",
-    "hessian_negll", "hessian_negll_upen", "basis", "edf", "LCV", "dLCV", "dLCV_full",
-    "fit", "fit_LCV"),
+  res = c("log_h", "gradient_log_h", "hessian_log_h", "dlogh_dt", "dh_dt", "h",
+    "gradient_h", "hessian_h", "H", "gradient_H", "hessian_H", "negll", "negll_upen",
+    "scores", "gradient_negll", "hessian_negll", "hessian_negll_upen", "basis", "edf",
+    "LCV", "dLCV", "dLCV_full", "fit", "fit_LCV"),
   model_type = "GH",
   time2 = NULL,
   cens_type = "rc",
@@ -47,7 +47,9 @@ Required for fitting.}
 \item{lambda}{Non-negative smoothing parameter for the spline penalty.}
 
 \item{res}{Character string selecting the quantity to return. One of
-\code{"log_h"}, \code{"gradient_log_h"}, \code{"hessian_log_h"}, \code{"h"},
+\code{"log_h"}, \code{"gradient_log_h"}, \code{"hessian_log_h"}, \code{"dlogh_dt"}
+(derivative of the log-hazard w.r.t. time), \code{"dh_dt"} (derivative of the
+hazard w.r.t. time), \code{"h"},
 \code{"gradient_h"}, \code{"hessian_h"}, \code{"H"}, \code{"gradient_H"}, \code{"hessian_H"},
 \code{"negll"}, \code{"negll_upen"}, \code{"scores"}, \code{"gradient_negll"},
 \code{"hessian_negll"}, \code{"hessian_negll_upen"}, \code{"basis"}, \code{"edf"}, \code{"LCV"},

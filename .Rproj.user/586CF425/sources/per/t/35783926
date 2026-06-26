@@ -3,7 +3,7 @@
     "path": "~/02_KI/GH/03_NextGen/genhaz/man/predict.genhaz_fit.Rd",
     "project_path": "man/predict.genhaz_fit.Rd",
     "type": "r_doc",
-    "hash": "0",
+    "hash": "1861470486",
     "contents": "",
     "dirty": false,
     "created": 1782400154491.0,
@@ -19,6 +19,8 @@
     "collab_server": "",
     "source_window": "",
     "last_content_update": 1782399708,
-    "read_only": false,
-    "read_only_alternatives": []
+    "read_only": true,
+    "read_only_alternatives": [
+        "R/generics.R"
+    ]
 }

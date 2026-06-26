@@ -9,8 +9,10 @@
   newdata,
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
-    "hazard_ratio", "time_ratio"),
+    "hazard_ratio", "time_ratio", "acc_factor"),
   alpha = 0.05,
+  ci = TRUE,
+  tau_max = NULL,
   ...
 )
 }
@@ -24,9 +26,17 @@ Row names become legend labels.}
 
 \item{type}{Quantity to plot. One of \code{"hazard"} (default), \code{"survival"},
 \code{"cumhaz"}, \code{"rmst"}, \code{"surv_diff"}, \code{"rmst_diff"}, \code{"hazard_ratio"},
-or \code{"time_ratio"}. The last four require exactly two rows in \code{newdata}.}
+\code{"time_ratio"}, or \code{"acc_factor"}. The last five require exactly two rows
+in \code{newdata}.}
 
 \item{alpha}{Significance level for confidence bands. Default 0.05.}
+
+\item{ci}{Logical; compute and draw confidence bands? When \code{FALSE}, only the
+point estimate is computed (faster) and plotted. Default \code{TRUE}.}
+
+\item{tau_max}{Passed to \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}}; upper bound for the time
+warp used by \code{"time_ratio"} and \code{"acc_factor"}. Default \code{NULL} (model
+support).}
 
 \item{...}{Additional arguments passed to \code{plot.genhaz_pred()} and then to
 \code{\link[graphics:plot.default]{graphics::plot()}} (e.g. \code{col}, \code{lty}, \code{xlab}, \code{main}, \code{xlim}).}
@@ -37,7 +47,7 @@ Invisibly returns the \code{"genhaz_pred"} object from
 }
 \description{
 Calls \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}} and passes the result to \code{plot.genhaz_pred()}.
-Supports all eight prediction types; \code{ylim} is automatically derived from
+Supports all nine prediction types; \code{ylim} is automatically derived from
 the full range of CI bands so no line is clipped.
 }
 \examples{

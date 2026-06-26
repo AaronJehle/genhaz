@@ -13,6 +13,7 @@
   main = NULL,
   legend = TRUE,
   ci = TRUE,
+  ylim = NULL,
   ...
 )
 }
@@ -35,13 +36,17 @@ Default \code{TRUE}.}
 
 \item{ci}{Logical; overlay dashed confidence band lines? Default \code{TRUE}.}
 
+\item{ylim}{Numeric length-2 y-axis limits. When \code{NULL} (default), derived
+from the full range of the point estimate and both CI bands so nothing is
+clipped.}
+
 \item{...}{Additional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
 }
 \value{
 Invisibly returns \code{x}.
 }
 \description{
-Plots the output of \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}} — any of the eight prediction
+Plots the output of \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}} — any of the nine prediction
 types. Each distinct covariate pattern becomes a coloured line; confidence
 bands are drawn as dashed lines of the same colour. \code{ylim} is always
 derived from the full range of CI bands plus the point estimate, so nothing

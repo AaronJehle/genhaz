@@ -3,7 +3,7 @@
     "path": "~/02_KI/GH/03_NextGen/genhaz/man/plot.genhaz_fit.Rd",
     "project_path": "man/plot.genhaz_fit.Rd",
     "type": "r_doc",
-    "hash": "0",
+    "hash": "3540401900",
     "contents": "",
     "dirty": false,
     "created": 1782400154335.0,
@@ -19,6 +19,8 @@
     "collab_server": "",
     "source_window": "",
     "last_content_update": 1782399764,
-    "read_only": false,
-    "read_only_alternatives": []
+    "read_only": true,
+    "read_only_alternatives": [
+        "R/generics.R"
+    ]
 }

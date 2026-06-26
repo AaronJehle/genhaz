@@ -172,6 +172,23 @@ as_genhaz_pred <- function(df, type) {
   df
 }
 
+# Warn when the equal-cumulative-hazard time tau could not be found within the
+# model support (tau_max), so the corresponding estimates are NA. `estimate` is
+# the point-estimate column; `times` the requested grid.
+warn_tau_support <- function(estimate, times, tau_max, type) {
+  n_na <- sum(is.na(estimate))
+  if (n_na > 0L) {
+    warning(sprintf(
+      paste0("predict(type = \"%s\"): the equal-cumulative-hazard time tau ",
+             "exceeded the model support (tau_max = %.4g) for %d of %d time ",
+             "point(s); returning NA there. The baseline group (row 2) does ",
+             "not reach the comparison group's (row 1) cumulative hazard ",
+             "within support. Pass a larger 'tau_max' to extrapolate."),
+      type, tau_max, n_na, length(times)), call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 #' Predict from a fitted GH model
 #'
 #' Evaluates the fitted model at one or more covariate patterns over a time
@@ -181,32 +198,53 @@ as_genhaz_pred <- function(df, type) {
 #' @param object A `"genhaz_fit"` object from [fit_genhaz()].
 #' @param newdata A `data.frame` of covariate values. Each row defines one
 #'   covariate pattern; row names are used as group labels in the output.
-#'   Must contain all variables referenced in the model formula. For
-#'   `"surv_diff"` and `"rmst_diff"`, exactly two rows are required.
+#'   Must contain all variables referenced in the model formula. For the
+#'   two-group comparison types, exactly two rows are required: **row 1 is the
+#'   exposed group (group 1)** and **row 2 the unexposed/baseline group
+#'   (group 0)**.
 #' @param times Numeric vector of time points. For `"rmst"` and `"rmst_diff"`,
 #'   these are restriction times tau at which RMST(tau) = integral_0^tau S(t) dt
 #'   is evaluated.
 #' @param type Quantity to predict: `"hazard"` (default), `"survival"`,
 #'   `"cumhaz"` (cumulative hazard), `"rmst"` (restricted mean survival time),
-#'   `"surv_diff"` (survival difference S1−S2), `"rmst_diff"` (RMST
-#'   difference), `"hazard_ratio"` (h1/h2), or `"time_ratio"` (tau/t where
-#'   S2(tau) = S1(t)). The last four require exactly two rows in `newdata`.
+#'   `"surv_diff"` (survival difference S1−S0), `"rmst_diff"` (RMST
+#'   difference), `"hazard_ratio"` (h1/h0), `"time_ratio"` (tau/t where
+#'   S0(tau) = S1(t): the baseline time tau at which the baseline group reaches
+#'   the comparison group's survival at t), or `"acc_factor"` (the time-varying
+#'   acceleration *effect* on the log scale, f(t) = log tau'(t) =
+#'   log h1(t) - log h0(tau), where tau is defined by H0(tau) = H1(t); this
+#'   satisfies S(t | x1) = S0(integral_0^t exp(f(u) X) du), i.e. tau(t) =
+#'   integral_0^t exp(f(u) X) du with instantaneous rate exp(f(t) X) = tau'(t),
+#'   so f(t) = beta1 in the constant-AFT limit and is directly comparable to
+#'   beta1). The last five require exactly two rows in `newdata`.
 #' @param alpha Significance level for confidence intervals. Default 0.05.
+#' @param ci Logical; compute confidence intervals? When `FALSE`, only the
+#'   point `estimate` is computed (skipping the delta-method gradients and any
+#'   root-solving overhead they require) and the `lower`/`upper` columns are
+#'   returned as `NA`. Default `TRUE`.
+#' @param tau_max Upper bound for the equal-cumulative-hazard time tau solved by
+#'   `"time_ratio"` and `"acc_factor"`. Defaults to the model support
+#'   `exp(max(object$knots))` (the largest knot, beyond which the spline is pure
+#'   linear extrapolation). When the baseline group does not reach the
+#'   comparison group's cumulative hazard within `[0, tau_max]`, the warp is not
+#'   identified and the corresponding rows are returned as `NA` with a warning;
+#'   pass a larger value to allow extrapolation. Ignored by all other types.
 #' @param ... Currently unused.
 #'
 #' @return A `data.frame` of class `c("genhaz_pred", "data.frame")` with
-#'   columns `pattern`, `time`, `estimate`, `lower`, `upper`. A `pred_type`
-#'   attribute records which quantity was computed; `plot()` uses this to set
-#'   axis labels automatically. For per-group types rows are grouped by
-#'   covariate pattern; for difference types a single block labelled
-#'   `"group1 - group2"` is returned.
+#'   columns `pattern`, `time`, `estimate`, `lower`, `upper` (the latter two are
+#'   `NA` when `ci = FALSE`). A `pred_type` attribute records which quantity was
+#'   computed; `plot()` uses this to set axis labels automatically. For
+#'   per-group types rows are grouped by covariate pattern; for two-group types
+#'   a single block labelled `"group1 - group0"` (exposed - unexposed) is
+#'   returned.
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' t_grid <- seq(0.01, 8, length.out = 200)
-#' nd <- data.frame(X = c(0, 1))
-#' rownames(nd) <- c("Unexposed", "Exposed")
+#' nd <- data.frame(X = c(1, 0))
+#' rownames(nd) <- c("Exposed", "Unexposed")
 #'
 #' predict(fit, newdata = nd, times = t_grid, type = "survival")
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
@@ -214,43 +252,56 @@ as_genhaz_pred <- function(df, type) {
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
 #' predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
 #' predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
+#' predict(fit, newdata = nd, times = t_grid, type = "acc_factor")
 #' }
 predict.genhaz_fit <- function(object, newdata, times,
                                type  = c("hazard", "survival", "cumhaz",
                                          "rmst", "surv_diff", "rmst_diff",
-                                         "hazard_ratio", "time_ratio"),
-                               alpha = 0.05, ...) {
+                                         "hazard_ratio", "time_ratio",
+                                         "acc_factor"),
+                               alpha = 0.05, ci = TRUE, tau_max = NULL, ...) {
   fit       <- object
   type      <- match.arg(type)
+  # Upper bound for the equal-cumulative-hazard time tau used by "time_ratio"
+  # and "acc_factor". Beyond the largest knot the spline is pure linear
+  # extrapolation, so by default we do not search the warp past the model
+  # support; tau values that would exceed it are returned as NA.
+  if (is.null(tau_max)) tau_max <- exp(max(fit$knots))
   X_mat     <- model.matrix(fit$formula, newdata)[, -1L, drop = FALSE]
   patterns  <- rownames(newdata)
   var_theta <- fit$var
   z         <- qnorm(1 - alpha / 2)
 
   # ---- two-group comparison types ------------------------------------------
-  if (type %in% c("surv_diff", "rmst_diff", "hazard_ratio", "time_ratio")) {
+  if (type %in% c("surv_diff", "rmst_diff", "hazard_ratio", "time_ratio",
+                  "acc_factor")) {
     if (nrow(X_mat) != 2L)
       stop("'newdata' must have exactly 2 rows for type '", type, "'.")
     pat_label <- paste0(patterns[1L], " - ", patterns[2L])
 
     if (type == "surv_diff") {
       xi1 <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
-      xi2 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+      xi0 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
 
       S1        <- exp(-post(fit, xi1, times, "H"))
-      S2        <- exp(-post(fit, xi2, times, "H"))
-      grad_H1   <- post(fit, xi1, times, "gradient_H")
-      grad_H2   <- post(fit, xi2, times, "gradient_H")
-      diff_val  <- S1 - S2
-      # grad of (S1 - S2) w.r.t. theta: -S1*grad_H1 + S2*grad_H2 (row-wise)
-      grad_diff <- -S1 * grad_H1 + S2 * grad_H2
-      var_diff  <- rowSums((grad_diff %*% var_theta) * grad_diff)
+      S0        <- exp(-post(fit, xi0, times, "H"))
+      diff_val  <- S1 - S0
+      lwr <- upr <- rep(NA_real_, length(times))
+      if (ci) {
+        grad_H1   <- post(fit, xi1, times, "gradient_H")
+        grad_H0   <- post(fit, xi0, times, "gradient_H")
+        # grad of (S1 - S0) w.r.t. theta: -S1*grad_H1 + S0*grad_H0 (row-wise)
+        grad_diff <- -S1 * grad_H1 + S0 * grad_H0
+        var_diff  <- rowSums((grad_diff %*% var_theta) * grad_diff)
+        lwr <- diff_val - z * sqrt(var_diff)
+        upr <- diff_val + z * sqrt(var_diff)
+      }
 
       return(as_genhaz_pred(data.frame(
                         pattern  = pat_label, time = times,
                         estimate = diff_val,
-                        lower    = diff_val - z * sqrt(var_diff),
-                        upper    = diff_val + z * sqrt(var_diff),
+                        lower    = lwr,
+                        upper    = upr,
                         stringsAsFactors = FALSE), type))
 
     } else if (type == "rmst_diff") {
@@ -259,16 +310,17 @@ predict.genhaz_fit <- function(object, newdata, times,
         t_q   <- tau * (gl$x + 1) / 2
         w_q   <- tau / 2 * gl$w
         xi1_q <- matrix(rep(X_mat[1L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
-        xi2_q <- matrix(rep(X_mat[2L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
+        xi0_q <- matrix(rep(X_mat[2L, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
 
         S1_q      <- exp(-post(fit, xi1_q, t_q, "H"))
-        S2_q      <- exp(-post(fit, xi2_q, t_q, "H"))
-        grad_H1_q <- post(fit, xi1_q, t_q, "gradient_H")
-        grad_H2_q <- post(fit, xi2_q, t_q, "gradient_H")
+        S0_q      <- exp(-post(fit, xi0_q, t_q, "H"))
+        diff_val  <- sum(w_q * S1_q) - sum(w_q * S0_q)
+        if (!ci) return(c(diff_val, NA_real_, NA_real_))
 
-        diff_val  <- sum(w_q * S1_q) - sum(w_q * S2_q)
+        grad_H1_q <- post(fit, xi1_q, t_q, "gradient_H")
+        grad_H0_q <- post(fit, xi0_q, t_q, "gradient_H")
         grad_diff <- colSums(-w_q * S1_q * grad_H1_q) -
-                     colSums(-w_q * S2_q * grad_H2_q)
+                     colSums(-w_q * S0_q * grad_H0_q)
         var_diff  <- as.numeric(crossprod(grad_diff, var_theta %*% grad_diff))
         c(diff_val, diff_val - z * sqrt(var_diff), diff_val + z * sqrt(var_diff))
       }, numeric(3)))
@@ -282,54 +334,113 @@ predict.genhaz_fit <- function(object, newdata, times,
 
     } else if (type == "hazard_ratio") {
       xi1 <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
-      xi2 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+      xi0 <- matrix(rep(X_mat[2L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
 
       h1      <- post(fit, xi1, times, "h")
-      h2      <- post(fit, xi2, times, "h")
-      grad_h1 <- post(fit, xi1, times, "gradient_h")
-      grad_h2 <- post(fit, xi2, times, "gradient_h")
-
-      HR         <- h1 / h2
-      grad_logHR <- grad_h1 / h1 - grad_h2 / h2   # row-wise: each row scaled by scalar
-      var_logHR  <- rowSums((grad_logHR %*% var_theta) * grad_logHR)
+      h0      <- post(fit, xi0, times, "h")
+      HR      <- h1 / h0
+      lwr <- upr <- rep(NA_real_, length(times))
+      if (ci) {
+        grad_h1 <- post(fit, xi1, times, "gradient_h")
+        grad_h0 <- post(fit, xi0, times, "gradient_h")
+        grad_logHR <- grad_h1 / h1 - grad_h0 / h0   # row-wise: each row scaled by scalar
+        var_logHR  <- rowSums((grad_logHR %*% var_theta) * grad_logHR)
+        lwr <- exp(log(HR) - z * sqrt(var_logHR))
+        upr <- exp(log(HR) + z * sqrt(var_logHR))
+      }
 
       return(as_genhaz_pred(data.frame(
                         pattern  = pat_label, time = times,
                         estimate = HR,
-                        lower    = exp(log(HR) - z * sqrt(var_logHR)),
-                        upper    = exp(log(HR) + z * sqrt(var_logHR)),
+                        lower    = lwr,
+                        upper    = upr,
                         stringsAsFactors = FALSE), type))
 
-    } else {
-      # time_ratio: TR(t) = tau/t where H2(tau) = H1(t), i.e. S2(tau) = S1(t).
-      # Delta method via implicit function theorem:
-      #   grad(log TR) = (grad_H1(t) - grad_H2(tau)) / (tau * h2(tau))
+    } else if (type == "time_ratio") {
+      # time_ratio: TR(t) = tau/t where H0(tau) = H1(t), i.e. S0(tau) = S1(t):
+      # at which (baseline) time tau does the baseline group (row 2, group 0)
+      # reach the comparison group's (row 1, group 1) survival level at time t.
+      # (Relation S(t|x1) = S0(tau(t)): observe the comparison group at t, warp
+      # the baseline.) Delta method via implicit function theorem:
+      #   grad(log TR) = (grad_H1(t) - grad_H0(tau)) / (tau * h0(tau))
       xi1     <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
       H1      <- post(fit, xi1, times, "H")
-      grad_H1 <- post(fit, xi1, times, "gradient_H")
-      t_upper <- max(times) * 20
+      grad_H1 <- if (ci) post(fit, xi1, times, "gradient_H") else NULL
 
       out <- t(vapply(seq_along(times), function(j) {
         target <- H1[j]
         tau_j  <- tryCatch(
           uniroot(function(tau_try) {
             post(fit, matrix(X_mat[2L, ], nrow = 1L), tau_try, "H") - target
-          }, lower = 1e-8, upper = t_upper, tol = 1e-8)$root,
+          }, lower = 1e-8, upper = tau_max, tol = 1e-8)$root,
           error = function(e) NA_real_
         )
         if (is.na(tau_j)) return(c(NA_real_, NA_real_, NA_real_))
+        TR_j <- tau_j / times[j]
+        if (!ci) return(c(TR_j, NA_real_, NA_real_))
 
-        xi2_tau     <- matrix(X_mat[2L, ], nrow = 1L)
-        h2_tau      <- post(fit, xi2_tau, tau_j, "h")
-        grad_H2_tau <- post(fit, xi2_tau, tau_j, "gradient_H")
+        xi0_tau     <- matrix(X_mat[2L, ], nrow = 1L)
+        h0_tau      <- post(fit, xi0_tau, tau_j, "h")
+        grad_H0_tau <- post(fit, xi0_tau, tau_j, "gradient_H")
 
-        grad_logTR <- (grad_H1[j, ] - grad_H2_tau[1L, ]) / (tau_j * h2_tau)
+        grad_logTR <- (grad_H1[j, ] - grad_H0_tau[1L, ]) / (tau_j * h0_tau)
         var_logTR  <- as.numeric(crossprod(grad_logTR, var_theta %*% grad_logTR))
-        TR_j       <- tau_j / times[j]
         c(TR_j, exp(log(TR_j) - z * sqrt(var_logTR)),
                 exp(log(TR_j) + z * sqrt(var_logTR)))
       }, numeric(3)))
 
+      warn_tau_support(out[, 1L], times, tau_max, "time_ratio")
+      return(as_genhaz_pred(data.frame(
+                        pattern  = pat_label, time = times,
+                        estimate = out[, 1L],
+                        lower    = out[, 2L],
+                        upper    = out[, 3L],
+                        stringsAsFactors = FALSE), type))
+
+    } else {
+      # acc_factor: time-varying acceleration EFFECT on the log scale,
+      #   f(t) = log phi(t) = log tau'(t),  phi(t) = tau'(t) = h1(t) / h0(tau),
+      #   tau defined by H0(tau) = H1(t), so that tau(t) = integral_0^t exp(f(u) X) du
+      #   and S(t|x1) = S0(integral_0^t exp(f(u) X) du). In the constant-AFT limit
+      #   f(t) = beta1 (consistent with time-varying AFT models). Observe the
+      #   comparison group (row 1, group 1) at t and warp the baseline (row 2,
+      #   group 0). Delta method (tau depends on theta via the constraint):
+      #   dtau/dtheta = (grad_H1(t) - grad_H0(tau)) / h0(tau)
+      #   grad(f) = grad_logh1(t) - grad_logh0(tau)
+      #             - (h0'(tau) / h0(tau)^2) * (grad_H1(t) - grad_H0(tau))
+      # where h0'(tau) = d/dt h0 evaluated at tau (post(..., "dh_dt")).
+      xi1        <- matrix(rep(X_mat[1L, ], length(times)), ncol = ncol(X_mat), byrow = TRUE)
+      H1         <- post(fit, xi1, times, "H")
+      h1         <- post(fit, xi1, times, "h")
+      grad_H1    <- if (ci) post(fit, xi1, times, "gradient_H")      else NULL
+      grad_logh1 <- if (ci) post(fit, xi1, times, "gradient_log_h")  else NULL
+
+      out <- t(vapply(seq_along(times), function(j) {
+        target <- H1[j]
+        tau_j  <- tryCatch(
+          uniroot(function(tau_try) {
+            post(fit, matrix(X_mat[2L, ], nrow = 1L), tau_try, "H") - target
+          }, lower = 1e-8, upper = tau_max, tol = 1e-8)$root,
+          error = function(e) NA_real_
+        )
+        if (is.na(tau_j)) return(c(NA_real_, NA_real_, NA_real_))
+
+        xi0_tau <- matrix(X_mat[2L, ], nrow = 1L)
+        h0_tau  <- post(fit, xi0_tau, tau_j, "h")
+        f_j     <- log(h1[j] / h0_tau)            # f(t) = log phi(t) = log tau'(t)
+        if (!ci) return(c(f_j, NA_real_, NA_real_))
+
+        dh0_tau        <- post(fit, xi0_tau, tau_j, "dh_dt")
+        grad_H0_tau    <- post(fit, xi0_tau, tau_j, "gradient_H")[1L, ]
+        grad_logh0_tau <- post(fit, xi0_tau, tau_j, "gradient_log_h")[1L, ]
+
+        grad_f  <- grad_logh1[j, ] - grad_logh0_tau -
+                   (dh0_tau / h0_tau^2) * (grad_H1[j, ] - grad_H0_tau)
+        var_f   <- as.numeric(crossprod(grad_f, var_theta %*% grad_f))
+        c(f_j, f_j - z * sqrt(var_f), f_j + z * sqrt(var_f))   # symmetric on log scale
+      }, numeric(3)))
+
+      warn_tau_support(out[, 1L], times, tau_max, "acc_factor")
       return(as_genhaz_pred(data.frame(
                         pattern  = pat_label, time = times,
                         estimate = out[, 1L],
@@ -346,35 +457,42 @@ predict.genhaz_fit <- function(object, newdata, times,
 
     if (type == "hazard") {
       hv      <- post(fit, xi, times, "h")
-      grad_h  <- post(fit, xi, times, "gradient_h")
-      var_h   <- rowSums((grad_h %*% var_theta) * grad_h)
-      SE_logh <- sqrt(var_h) / hv
+      lwr <- upr <- rep(NA_real_, length(times))
+      if (ci) {
+        grad_h  <- post(fit, xi, times, "gradient_h")
+        var_h   <- rowSums((grad_h %*% var_theta) * grad_h)
+        SE_logh <- sqrt(var_h) / hv
+        lwr <- exp(log(hv) - z * SE_logh)
+        upr <- exp(log(hv) + z * SE_logh)
+      }
       data.frame(pattern  = patterns[i], time = times,
                  estimate = hv,
-                 lower    = exp(log(hv) - z * SE_logh),
-                 upper    = exp(log(hv) + z * SE_logh),
+                 lower    = lwr,
+                 upper    = upr,
                  stringsAsFactors = FALSE)
 
     } else if (type %in% c("survival", "cumhaz")) {
       H       <- post(fit, xi, times, "H")
-      grad_H  <- post(fit, xi, times, "gradient_H")
       logH    <- log(H)
-      var_H   <- rowSums((grad_H %*% var_theta) * grad_H)
-      SE_logH <- sqrt(var_H) / H
-
-      if (type == "cumhaz") {
-        data.frame(pattern  = patterns[i], time = times,
-                   estimate = H,
-                   lower    = exp(logH - z * SE_logH),
-                   upper    = exp(logH + z * SE_logH),
-                   stringsAsFactors = FALSE)
-      } else {
-        data.frame(pattern  = patterns[i], time = times,
-                   estimate = exp(-H),
-                   lower    = exp(-exp(logH + z * SE_logH)),
-                   upper    = exp(-exp(logH - z * SE_logH)),
-                   stringsAsFactors = FALSE)
+      lwr <- upr <- rep(NA_real_, length(times))
+      if (ci) {
+        grad_H  <- post(fit, xi, times, "gradient_H")
+        var_H   <- rowSums((grad_H %*% var_theta) * grad_H)
+        SE_logH <- sqrt(var_H) / H
+        if (type == "cumhaz") {
+          lwr <- exp(logH - z * SE_logH)
+          upr <- exp(logH + z * SE_logH)
+        } else {
+          lwr <- exp(-exp(logH + z * SE_logH))
+          upr <- exp(-exp(logH - z * SE_logH))
+        }
       }
+      estimate <- if (type == "cumhaz") H else exp(-H)
+      data.frame(pattern  = patterns[i], time = times,
+                 estimate = estimate,
+                 lower    = lwr,
+                 upper    = upr,
+                 stringsAsFactors = FALSE)
 
     } else {
       # RMST(tau) = integral_0^tau S(t) dt via Gauss-Legendre quadrature.
@@ -387,9 +505,10 @@ predict.genhaz_fit <- function(object, newdata, times,
 
         xi_q     <- matrix(rep(X_mat[i, ], 25L), ncol = ncol(X_mat), byrow = TRUE)
         S_q      <- exp(-post(fit, xi_q, t_q, "H"))
-        grad_H_q <- post(fit, xi_q, t_q, "gradient_H")
-
         rmst_val  <- sum(w_q * S_q)
+        if (!ci) return(c(rmst_val, NA_real_, NA_real_))
+
+        grad_H_q <- post(fit, xi_q, t_q, "gradient_H")
         grad_rmst <- colSums(-w_q * S_q * grad_H_q)
         var_rmst  <- as.numeric(crossprod(grad_rmst, var_theta %*% grad_rmst))
 
@@ -412,7 +531,7 @@ predict.genhaz_fit <- function(object, newdata, times,
 
 #' Plot a genhaz prediction
 #'
-#' Plots the output of [predict.genhaz_fit()] — any of the eight prediction
+#' Plots the output of [predict.genhaz_fit()] — any of the nine prediction
 #' types. Each distinct covariate pattern becomes a coloured line; confidence
 #' bands are drawn as dashed lines of the same colour. `ylim` is always
 #' derived from the full range of CI bands plus the point estimate, so nothing
@@ -429,6 +548,9 @@ predict.genhaz_fit <- function(object, newdata, times,
 #' @param legend Logical; draw a legend when multiple groups are present?
 #'   Default `TRUE`.
 #' @param ci Logical; overlay dashed confidence band lines? Default `TRUE`.
+#' @param ylim Numeric length-2 y-axis limits. When `NULL` (default), derived
+#'   from the full range of the point estimate and both CI bands so nothing is
+#'   clipped.
 #' @param ... Additional graphical parameters passed to [graphics::plot()].
 #'
 #' @return Invisibly returns `x`.
@@ -447,7 +569,7 @@ predict.genhaz_fit <- function(object, newdata, times,
 #' }
 plot.genhaz_pred <- function(x, col = NULL, lty = 1,
                               xlab = "Time", ylab = NULL, main = NULL,
-                              legend = TRUE, ci = TRUE, ...) {
+                              legend = TRUE, ci = TRUE, ylim = NULL, ...) {
   pred_type <- attr(x, "pred_type")
   patterns  <- unique(x$pattern)
   n_pat     <- length(patterns)
@@ -462,7 +584,8 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
     surv_diff    = "Survival difference",
     rmst_diff    = "RMST difference",
     hazard_ratio = "Hazard ratio",
-    time_ratio   = "Time ratio"
+    time_ratio   = "Time ratio",
+    acc_factor   = "Acceleration effect f(t)"
   )
   if (is.null(main)) main <- switch(pred_type,
     hazard       = "Estimated hazard",
@@ -471,12 +594,13 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
     rmst         = "Restricted mean survival time",
     surv_diff    = "Survival difference",
     rmst_diff    = "RMST difference",
-    hazard_ratio = "Hazard ratio h1(t) / h2(t)",
-    time_ratio   = "Time ratio"
+    hazard_ratio = "Hazard ratio h1(t) / h0(t)",
+    time_ratio   = "Time ratio",
+    acc_factor   = "Time-varying acceleration effect f(t) = log tau'(t)"
   )
 
-  # Y range covers estimate + both CI bands — nothing is clipped
-  ylim <- range(c(x$lower, x$upper, x$estimate), na.rm = TRUE)
+  # Y range covers estimate + both CI bands — nothing is clipped. Exception if ylim is defined by the user
+  if(is.null(ylim)) ylim <- range(c(x$lower, x$upper, x$estimate), na.rm = TRUE)
 
   d1 <- x[x$pattern == patterns[1L], ]
   plot(d1$time, d1$estimate, type = "l",
@@ -507,7 +631,7 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
 #' Plot estimated curves from a fitted GH model
 #'
 #' Calls [predict.genhaz_fit()] and passes the result to `plot.genhaz_pred()`.
-#' Supports all eight prediction types; `ylim` is automatically derived from
+#' Supports all nine prediction types; `ylim` is automatically derived from
 #' the full range of CI bands so no line is clipped.
 #'
 #' @param x A `"genhaz_fit"` object from [fit_genhaz()].
@@ -516,8 +640,14 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
 #' @param times Numeric vector of evaluation time points.
 #' @param type Quantity to plot. One of `"hazard"` (default), `"survival"`,
 #'   `"cumhaz"`, `"rmst"`, `"surv_diff"`, `"rmst_diff"`, `"hazard_ratio"`,
-#'   or `"time_ratio"`. The last four require exactly two rows in `newdata`.
+#'   `"time_ratio"`, or `"acc_factor"`. The last five require exactly two rows
+#'   in `newdata`.
 #' @param alpha Significance level for confidence bands. Default 0.05.
+#' @param ci Logical; compute and draw confidence bands? When `FALSE`, only the
+#'   point estimate is computed (faster) and plotted. Default `TRUE`.
+#' @param tau_max Passed to [predict.genhaz_fit()]; upper bound for the time
+#'   warp used by `"time_ratio"` and `"acc_factor"`. Default `NULL` (model
+#'   support).
 #' @param ... Additional arguments passed to `plot.genhaz_pred()` and then to
 #'   [graphics::plot()] (e.g. `col`, `lty`, `xlab`, `main`, `xlim`).
 #'
@@ -541,11 +671,12 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
 plot.genhaz_fit <- function(x, newdata, times,
                             type  = c("hazard", "survival", "cumhaz",
                                       "rmst", "surv_diff", "rmst_diff",
-                                      "hazard_ratio", "time_ratio"),
-                            alpha = 0.05, ...) {
+                                      "hazard_ratio", "time_ratio",
+                                      "acc_factor"),
+                            alpha = 0.05, ci = TRUE, tau_max = NULL, ...) {
   type <- match.arg(type)
   pred <- stats::predict(x, newdata = newdata, times = times,
-                         type = type, alpha = alpha)
-  plot(pred, ...)
+                         type = type, alpha = alpha, ci = ci, tau_max = tau_max)
+  plot(pred, ci = ci, ...)
   invisible(pred)
 }

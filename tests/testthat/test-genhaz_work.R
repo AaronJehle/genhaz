@@ -61,6 +61,36 @@ test_that("gradient_log_h passes finite-difference check", {
 })
 
 
+test_that("dh_dt passes finite-difference check (derivative in time)", {
+  n_chk <- 5
+  t_chk <- .sim_dat$time[seq_len(n_chk)]
+  X_chk <- .X_mat[seq_len(n_chk), , drop = FALSE]
+  eps   <- 1e-6
+
+  dh_ana <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z,
+                        res = "dh_dt", model_type = "GH")
+  h_p    <- genhaz_work(.theta0, t_chk + eps, X_chk, .knots, .Z,
+                        res = "h", model_type = "GH")
+  h_m    <- genhaz_work(.theta0, t_chk - eps, X_chk, .knots, .Z,
+                        res = "h", model_type = "GH")
+  dh_fd  <- (h_p - h_m) / (2 * eps)
+  expect_lt(max(abs(dh_ana - dh_fd)), 1e-4)
+})
+
+test_that("dlogh_dt equals dh_dt / h", {
+  n_chk <- 5
+  t_chk <- .sim_dat$time[seq_len(n_chk)]
+  X_chk <- .X_mat[seq_len(n_chk), , drop = FALSE]
+
+  dlogh <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z,
+                       res = "dlogh_dt", model_type = "GH")
+  dh    <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z,
+                       res = "dh_dt", model_type = "GH")
+  hv    <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z,
+                       res = "h", model_type = "GH")
+  expect_equal(dlogh, dh / hv, tolerance = 1e-10)
+})
+
 test_that("gradient_H passes finite-difference check", {
   n_chk <- 5
   t_chk <- .sim_dat$time[seq_len(n_chk)]

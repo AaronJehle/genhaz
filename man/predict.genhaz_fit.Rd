@@ -9,8 +9,10 @@
   newdata,
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
-    "hazard_ratio", "time_ratio"),
+    "hazard_ratio", "time_ratio", "acc_factor"),
   alpha = 0.05,
+  ci = TRUE,
+  tau_max = NULL,
   ...
 )
 }
@@ -19,8 +21,10 @@
 
 \item{newdata}{A \code{data.frame} of covariate values. Each row defines one
 covariate pattern; row names are used as group labels in the output.
-Must contain all variables referenced in the model formula. For
-\code{"surv_diff"} and \code{"rmst_diff"}, exactly two rows are required.}
+Must contain all variables referenced in the model formula. For the
+two-group comparison types, exactly two rows are required: \strong{row 1 is the
+exposed group (group 1)} and \strong{row 2 the unexposed/baseline group
+(group 0)}.}
 
 \item{times}{Numeric vector of time points. For \code{"rmst"} and \code{"rmst_diff"},
 these are restriction times tau at which RMST(tau) = integral_0^tau S(t) dt
@@ -28,21 +32,42 @@ is evaluated.}
 
 \item{type}{Quantity to predict: \code{"hazard"} (default), \code{"survival"},
 \code{"cumhaz"} (cumulative hazard), \code{"rmst"} (restricted mean survival time),
-\code{"surv_diff"} (survival difference S1−S2), \code{"rmst_diff"} (RMST
-difference), \code{"hazard_ratio"} (h1/h2), or \code{"time_ratio"} (tau/t where
-S2(tau) = S1(t)). The last four require exactly two rows in \code{newdata}.}
+\code{"surv_diff"} (survival difference S1−S0), \code{"rmst_diff"} (RMST
+difference), \code{"hazard_ratio"} (h1/h0), \code{"time_ratio"} (tau/t where
+S0(tau) = S1(t): the baseline time tau at which the baseline group reaches
+the comparison group's survival at t), or \code{"acc_factor"} (the time-varying
+acceleration \emph{effect} on the log scale, f(t) = log tau'(t) =
+log h1(t) - log h0(tau), where tau is defined by H0(tau) = H1(t); this
+satisfies S(t | x1) = S0(integral_0^t exp(f(u) X) du), i.e. tau(t) =
+integral_0^t exp(f(u) X) du with instantaneous rate exp(f(t) X) = tau'(t),
+so f(t) = beta1 in the constant-AFT limit and is directly comparable to
+beta1). The last five require exactly two rows in \code{newdata}.}
 
 \item{alpha}{Significance level for confidence intervals. Default 0.05.}
+
+\item{ci}{Logical; compute confidence intervals? When \code{FALSE}, only the
+point \code{estimate} is computed (skipping the delta-method gradients and any
+root-solving overhead they require) and the \code{lower}/\code{upper} columns are
+returned as \code{NA}. Default \code{TRUE}.}
+
+\item{tau_max}{Upper bound for the equal-cumulative-hazard time tau solved by
+\code{"time_ratio"} and \code{"acc_factor"}. Defaults to the model support
+\code{exp(max(object$knots))} (the largest knot, beyond which the spline is pure
+linear extrapolation). When the baseline group does not reach the
+comparison group's cumulative hazard within \verb{[0, tau_max]}, the warp is not
+identified and the corresponding rows are returned as \code{NA} with a warning;
+pass a larger value to allow extrapolation. Ignored by all other types.}
 
 \item{...}{Currently unused.}
 }
 \value{
 A \code{data.frame} of class \code{c("genhaz_pred", "data.frame")} with
-columns \code{pattern}, \code{time}, \code{estimate}, \code{lower}, \code{upper}. A \code{pred_type}
-attribute records which quantity was computed; \code{plot()} uses this to set
-axis labels automatically. For per-group types rows are grouped by
-covariate pattern; for difference types a single block labelled
-\code{"group1 - group2"} is returned.
+columns \code{pattern}, \code{time}, \code{estimate}, \code{lower}, \code{upper} (the latter two are
+\code{NA} when \code{ci = FALSE}). A \code{pred_type} attribute records which quantity was
+computed; \code{plot()} uses this to set axis labels automatically. For
+per-group types rows are grouped by covariate pattern; for two-group types
+a single block labelled \code{"group1 - group0"} (exposed - unexposed) is
+returned.
 }
 \description{
 Evaluates the fitted model at one or more covariate patterns over a time
@@ -52,8 +77,8 @@ Only the requested quantity is computed.
 \examples{
 \dontrun{
 t_grid <- seq(0.01, 8, length.out = 200)
-nd <- data.frame(X = c(0, 1))
-rownames(nd) <- c("Unexposed", "Exposed")
+nd <- data.frame(X = c(1, 0))
+rownames(nd) <- c("Exposed", "Unexposed")
 
 predict(fit, newdata = nd, times = t_grid, type = "survival")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
@@ -61,5 +86,6 @@ predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
 predict(fit, newdata = nd, times = t_grid, type = "hazard_ratio")
 predict(fit, newdata = nd, times = t_grid, type = "time_ratio")
+predict(fit, newdata = nd, times = t_grid, type = "acc_factor")
 }
 }

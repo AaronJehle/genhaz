@@ -59,6 +59,8 @@ for two covariates.
 
 ---
 
+Note: only rc is tested at this point in time.
+
 ## Real-data example: melanoma survival
 
 We use the `biostat3::melanoma` dataset: 7,775 patients with melanoma cancer,
@@ -109,12 +111,12 @@ mel$period <- ifelse(mel$year8594 == "Diagnosed 75-84", 0, 1)
 new_time   <- seq(0.5, 320, by = 0.5)   # avoids t = 0 (needed for time_ratio)
 
 nd_mel <- data.frame(
-  X      = c(0L, 1L),
+  X      = c(1L, 0L),
   period = c(1L, 1L),
   agegrp = factor(c("60-74", "60-74"), levels = levels(mel$agegrp)),
   sex    = factor(c("Male",  "Male"),  levels = levels(mel$sex))
 )
-rownames(nd_mel) <- c("Localised", "Non-localised")
+rownames(nd_mel) <- c("Non-Localised", "Localised")
 ```
 
 ### Results
@@ -156,8 +158,9 @@ plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "survival",
 
 ### Time-varying hazard ratio
 
-`type = "hazard_ratio"` gives $h_1(t)/h_2(t)$ with a log-scale delta-method
-CI. Under PH this would be flat; the GH model captures the time variation.
+`type = "hazard_ratio"` gives $h_1(t)/h_0(t)$ (exposed over baseline) with a
+log-scale delta-method CI. Under PH this would be flat; the GH model captures
+the time variation.
 `plot()` works directly on the `predict()` result.
 
 ```{r melanoma-hr}
@@ -175,8 +178,9 @@ time-varying hazard ratio: high at diagnosis, levelling off after approximately
 
 ### Survival difference and RMST
 
-`type = "surv_diff"` gives $S_1(t) - S_2(t)$ on the linear scale; the
-delta-method accounts for the correlation between the two curves.
+`type = "surv_diff"` gives $S_1(t) - S_0(t)$ (exposed minus baseline) on the
+linear scale; the delta-method accounts for the correlation between the two
+curves.
 `type = "rmst_diff"` integrates this difference up to each restriction
 time $\tau$ via 25-point Gauss-Legendre quadrature.
 
@@ -185,32 +189,62 @@ diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
                       times = new_time, type = "surv_diff")
 plot(diff_s_mel,
      xlab = "Time (months)",
-     main = "S(t | Localised) − S(t | Non-localised)")
+     main = "S(t | Non-localised) − S(t | Localised)")
 abline(h = 0, lty = 3, col = "grey70")
 
-tau_mel  <- c(12, 24, 60, 120, 240)
 rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
-                    times = tau_mel, type = "rmst_diff")
-rmst_mel
+                    times = new_time, type = "rmst_diff")
+plot(rmst_mel,
+     xlab = "Time (months)",
+     main = "RMST(t | Non-localised) − RMST(t | Localised)")
+abline(h = 0, lty = 3, col = "grey70")
 ```
 
 ### Time ratio
 
-`type = "time_ratio"` gives $\tau/t$ where $S_2(\tau) = S_1(t)$: how much
-longer does the non-localised group need to reach the same survival level as
-the localised group at time $t$? Each $\tau$ is found via `uniroot`; the
-delta-method CI uses the implicit function theorem. This is computationally
-intensive, so the chunk is not evaluated during build.
+`type = "time_ratio"` gives $\tau/t$ where $S_0(\tau) = S_1(t)$ (the relation
+$S(t\mid x_1)=S_0(\tau(t))$): the baseline time $\tau$ at which the localised
+(baseline, group 0, row 2) group reaches the survival level the non-localised
+(exposed, group 1, row 1) group has at time $t$. The non-localised group fares
+worse, so the localised group needs *longer* to fall that far, giving
+$\tau > t$. Each $\tau$ is found via `uniroot`; the delta-method CI uses the
+implicit function theorem. The search is capped at the model support
+`exp(max(fit$knots))` (`tau_max`); the localised baseline survival plateaus
+above the non-localised level, so beyond an early window no $\tau$ exists
+(returned `NA`) — we therefore use an in-support grid.
 
-```{r melanoma-time-ratio, eval=FALSE}
+```{r melanoma-time-ratio}
 tr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(6, 240, by = 6), type = "time_ratio")
+                  times = seq(2, 24, by = 2), type = "time_ratio")
 plot(tr_mel, col = "darkorange",
      xlab = "Time (months)", main = "Time ratio — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
 ```
 
----
+### Acceleration factor
+
+`type = "acc_factor"` reports the time-varying acceleration **effect** on the
+log scale,
+$$f(t) = \log \tau'(t) = \log h_1(t) - \log h_0(\tau(t)),$$
+the time-varying analogue of $\beta_1$: it is defined so that
+$$S(t \mid x_1) = S_0\!\left(\int_0^t e^{f(u)\,X}\,du\right),$$
+i.e. the warped time is $\tau(t)=\int_0^t e^{f(u)X}du$ with instantaneous rate
+$e^{f(t)X}=\tau'(t)$, and $f(t)=\beta_1$ in the constant-AFT limit. So $f(t)$ is
+directly comparable to the fitted $\hat\beta_1$ (here $\approx 1.14$). The
+delta-method CI uses the implicit function theorem together with the hazard
+time-derivative `post(..., "dh_dt")`; the same support cap applies, so we use
+the in-support grid.
+
+This is a work in progress.
+
+```{r melanoma-acc-factor}
+af_mel <- predict(fit_melanoma, newdata = nd_mel,
+                  times = seq(2, 24, by = 2), type = "acc_factor")
+plot(af_mel, col = "purple",
+     xlab = "Time (months)", main = "Acceleration effect f(t) — non-localised vs localised")
+abline(h = fit_melanoma$par["beta1_X"], lty = 2, col = "grey50")  # constant-AFT beta1
+```
+
 
 ## Simulation and benchmarking
 
@@ -220,8 +254,8 @@ early peak). `mixWeibSc()` evaluates the corresponding true $h$, $H$, and $S$
 on a grid for comparison with fitted estimates.
 
 ```{r simulate}
-set.seed(42)
-dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 500)
+set.seed(82359)
+dat <- sim_scenario(scenario = 1, beta1 = 0.5, beta2 = 0.5, n = 2000)
 head(dat)
 ```
 

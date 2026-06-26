@@ -3,7 +3,7 @@
     "path": "~/02_KI/GH/03_NextGen/genhaz/data-raw/prepare_melanoma_fit.R",
     "project_path": "data-raw/prepare_melanoma_fit.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "2614008549",
     "contents": "",
     "dirty": false,
     "created": 1782394760288.0,
@@ -11,7 +11,9 @@
     "relative_order": 2,
     "properties": {
         "source_window_id": "",
-        "Source": "Source"
+        "Source": "Source",
+        "cursorPosition": "32,67",
+        "scrollLine": "0"
     },
     "folds": "",
     "lastKnownWriteTime": 1782299559,

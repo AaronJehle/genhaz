@@ -1,0 +1,99 @@
+[
+    {
+        "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+        "file_last_write": 1782301865.0,
+        "definitions": [
+            {
+                "usr": "c:@F@quantile_type7#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "quantile_type7(arma::vec, arma::vec)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 24,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@chol2inv#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "chol2inv(arma::mat)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 50,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_FP_cpp#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_FP_cpp(arma::vec, arma::vec)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 57,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_cpp_D0#$@N@arma@S@Col>#d#S0_#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_cpp_D0(arma::vec, arma::vec, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 74,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_cpp_D1#$@N@arma@S@Col>#d#S0_#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_cpp_D1(arma::vec, arma::vec, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 133,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_cpp_D3#$@N@arma@S@Col>#d#S0_#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_cpp_D3(arma::vec, arma::vec, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 188,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_cpp_D2#$@N@arma@S@Col>#d#S0_#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_cpp_D2(arma::vec, arma::vec, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 226,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@crs_cpp#$@N@arma@S@Col>#d#k#$@N@Rcpp@S@Nullable>#S0_#k#b#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "crs_cpp(arma::vec, size_t, Rcpp::Nullable<arma::vec>, size_t, bool, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 305,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@smf_cpp#$@N@arma@S@Col>#d#k#$@N@Rcpp@S@Nullable>#S0_#b#k#$@N@Rcpp@S@Nullable>#$@N@arma@S@Mat>#d#b#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "smf_cpp(arma::vec, size_t, Rcpp::Nullable<arma::vec>, bool, size_t, Rcpp::Nullable<arma::mat>, bool)",
+                "file": "C:/Users/Aaron/Documents/02_KI/GH/03_NextGen/genhaz/src/crs_cpp.cpp",
+                "line": 393,
+                "column": 21,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]
