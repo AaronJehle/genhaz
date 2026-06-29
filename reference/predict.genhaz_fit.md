@@ -14,8 +14,8 @@ predict(
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
     "hazard_ratio", "time_ratio", "acc_factor"),
-  alpha = 0.05,
-  ci = TRUE,
+  interval = c("none", "confidence"),
+  level = 0.95,
   tau_max = NULL,
   ...
 )
@@ -59,16 +59,18 @@ predict(
   is directly comparable to beta1). The last five require exactly two
   rows in `newdata`.
 
-- alpha:
+- interval:
 
-  Significance level for confidence intervals. Default 0.05.
+  Type of interval to return, following
+  [`stats::predict.lm()`](https://rdrr.io/r/stats/predict.lm.html).
+  `"none"` (default) computes only the point `estimate` (skipping the
+  delta-method gradients and any root-solving overhead they require) and
+  returns the `lower`/`upper` columns as `NA`; `"confidence"` adds a
+  delta-method Wald confidence interval.
 
-- ci:
+- level:
 
-  Logical; compute confidence intervals? When `FALSE`, only the point
-  `estimate` is computed (skipping the delta-method gradients and any
-  root-solving overhead they require) and the `lower`/`upper` columns
-  are returned as `NA`. Default `TRUE`.
+  Confidence level for `interval = "confidence"`. Default 0.95.
 
 - tau_max:
 
@@ -89,11 +91,12 @@ predict(
 
 A `data.frame` of class `c("genhaz_pred", "data.frame")` with columns
 `pattern`, `time`, `estimate`, `lower`, `upper` (the latter two are `NA`
-when `ci = FALSE`). A `pred_type` attribute records which quantity was
-computed; [`plot()`](https://rdrr.io/r/graphics/plot.default.html) uses
-this to set axis labels automatically. For per-group types rows are
-grouped by covariate pattern; for two-group types a single block
-labelled `"group1 - group0"` (exposed - unexposed) is returned.
+when `interval = "none"`). A `pred_type` attribute records which
+quantity was computed;
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) uses this to
+set axis labels automatically. For per-group types rows are grouped by
+covariate pattern; for two-group types a single block labelled
+`"group1 - group0"` (exposed - unexposed) is returned.
 
 ## Examples
 
@@ -103,7 +106,8 @@ t_grid <- seq(0.01, 8, length.out = 200)
 nd <- data.frame(X = c(1, 0))
 rownames(nd) <- c("Exposed", "Unexposed")
 
-predict(fit, newdata = nd, times = t_grid, type = "survival")
+predict(fit, newdata = nd, times = t_grid, type = "survival",
+        interval = "confidence")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
 predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")

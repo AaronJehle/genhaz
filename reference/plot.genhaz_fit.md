@@ -17,8 +17,8 @@ plot(
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
     "hazard_ratio", "time_ratio", "acc_factor"),
-  alpha = 0.05,
-  ci = TRUE,
+  interval = c("none", "confidence"),
+  level = 0.95,
   tau_max = NULL,
   ...
 )
@@ -47,14 +47,16 @@ plot(
   `"time_ratio"`, or `"acc_factor"`. The last five require exactly two
   rows in `newdata`.
 
-- alpha:
+- interval:
 
-  Significance level for confidence bands. Default 0.05.
+  Passed to
+  [`predict.genhaz_fit()`](https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.md).
+  `"none"` (default) plots only the point estimate; `"confidence"`
+  computes and overlays delta-method confidence bands.
 
-- ci:
+- level:
 
-  Logical; compute and draw confidence bands? When `FALSE`, only the
-  point estimate is computed (faster) and plotted. Default `TRUE`.
+  Confidence level for `interval = "confidence"`. Default 0.95.
 
 - tau_max:
 

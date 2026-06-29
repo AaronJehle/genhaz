@@ -121,9 +121,9 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X = 0"</span>, <span class="st">"X = 1"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"hazard"</span>,</span>
-<span>     col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span></span>
+<span>     interval <span class="op">=</span> <span class="st">"confidence"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span>
-<span>     col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>     interval <span class="op">=</span> <span class="st">"confidence"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -139,11 +139,13 @@
 <code class="sourceCode R"><span><span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span>            <span class="co"># row 1 = exposed (group 1), row 2 = baseline (group 0)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Exposed"</span>, <span class="st">"Unexposed"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span><span class="op">)</span></span>
+<span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span>
+<span>                interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="co"># type = "hazard" | "survival" | "cumhaz" | "rmst"</span></span>
 <span><span class="co">#      | "surv_diff" | "rmst_diff" | "hazard_ratio" | "time_ratio" | "acc_factor"</span></span>
 <span><span class="co"># returns a data.frame: pattern | time | estimate | lower | upper</span></span></code></pre></div>
-<p>The five two-group types require exactly two rows in <code>newdata</code>: <strong>row 1 is the exposed group (group 1)</strong> and <strong>row 2 the unexposed/baseline group (group 0)</strong>. Results are labelled <code>"group1 - group0"</code> with delta-method confidence intervals (pass <code>ci = FALSE</code> to skip the CI computation and return only the estimate):</p>
+<p>Following <code><a href="https://rdrr.io/r/stats/predict.lm.html" class="external-link">stats::predict.lm</a></code>, <code>interval = "none"</code> (the default) returns only the point <code>estimate</code> (<code>lower</code>/<code>upper</code> are <code>NA</code>); pass <code>interval = "confidence"</code> for a delta-method Wald CI, with <code>level</code> setting the confidence level (default 0.95).</p>
+<p>The five two-group types require exactly two rows in <code>newdata</code>: <strong>row 1 is the exposed group (group 1)</strong> and <strong>row 2 the unexposed/baseline group (group 0)</strong>. Results are labelled <code>"group1 - group0"</code>; request CIs with <code>interval = "confidence"</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tau_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">6</span>, <span class="fl">8</span><span class="op">)</span></span>
 <span></span>
@@ -153,10 +155,10 @@
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>,  type <span class="op">=</span> <span class="st">"time_ratio"</span><span class="op">)</span>   <span class="co"># tau/t: S0(tau)=S1(t)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>,  type <span class="op">=</span> <span class="st">"acc_factor"</span><span class="op">)</span>   <span class="co"># f(t)=log tau'(t): S(t|x)=S0(int exp(f*X))</span></span></code></pre></div>
 <p>acc_factor is work in progress</p>
-<p><strong>Plot</strong> with automatic colours and delta-method confidence intervals:</p>
+<p><strong>Plot</strong> with automatic colours; add <code>interval = "confidence"</code> for delta-method confidence bands:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span><span class="op">)</span>                  <span class="co"># hazard (default)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span><span class="op">)</span>                  <span class="co"># hazard (default), no bands</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span>, interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -303,7 +305,7 @@
 </h4>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_adj</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>, times <span class="op">=</span> <span class="va">new.time</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span>
-<span>     col  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
+<span>     interval <span class="op">=</span> <span class="st">"confidence"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Estimated survival — melanoma, GH model"</span><span class="op">)</span></span></code></pre></div>
 <div class="float">
 <img src="reference/figures/survival_plot_mel_GH_adj.png" alt="Estimated survival curves (age 60–74, male, diagnosed 1985–94), GH model vs survPen"><div class="figcaption">Estimated survival curves (age 60–74, male, diagnosed 1985–94), GH model vs survPen</div>
@@ -314,7 +316,8 @@
 </h4>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hr_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_adj</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span><span class="op">)</span></span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span>,</span>
+<span>                  interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hr_mel</span>, col <span class="op">=</span> <span class="st">"purple"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Time-varying HR — non-localised vs localised"</span><span class="op">)</span></span>
@@ -439,7 +442,7 @@
 </tr>
 <tr>
 <td><code>predict(fit, newdata, times)</code></td>
-<td>Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio) with delta-method CIs; returns a <code>"genhaz_pred"</code> object</td>
+<td>Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio); <code>interval = "confidence"</code> adds delta-method CIs at <code>level</code>; returns a <code>"genhaz_pred"</code> object</td>
 </tr>
 <tr>
 <td><code>plot(pred)</code></td>
@@ -447,8 +450,7 @@
 </tr>
 <tr>
 <td><code>plot(fit, newdata, times)</code></td>
-<td>Convenience wrapper: calls <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> then <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>
-</td>
+<td>Convenience wrapper: calls <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> then <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> (<code>interval = "confidence"</code> for bands)</td>
 </tr>
 <tr>
 <td><code><a href="reference/post.html">post()</a></code></td>
@@ -459,24 +461,16 @@
 <td>Pointwise confidence bands for h, H, S</td>
 </tr>
 <tr>
-<td><code><a href="reference/waldCI.html">waldCI()</a></code></td>
-<td>Wald CI for a single parameter</td>
+<td><code>confint(fit)</code></td>
+<td>Wald CIs for parameters (<code>diff = TRUE</code> for <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>1</mn></msub><mo>−</mo><msub><mi>β</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\beta_1-\beta_2</annotation></semantics></math>)</td>
 </tr>
 <tr>
-<td><code><a href="reference/waldCI_minus.html">waldCI_minus()</a></code></td>
-<td>Wald CI for the difference of two parameters</td>
-</tr>
-<tr>
-<td><code><a href="reference/LR.html">LR()</a></code></td>
-<td>Likelihood ratio test between nested models</td>
+<td><code>anova(fit1, fit2)</code></td>
+<td>Likelihood ratio tests between nested models</td>
 </tr>
 <tr>
 <td><code><a href="reference/knot_pattern.html">knot_pattern()</a></code></td>
 <td>Place spline knots from event-time quantiles</td>
-</tr>
-<tr>
-<td><code><a href="reference/plot_hazard.html">plot_hazard()</a></code></td>
-<td>Quick hazard plot</td>
 </tr>
 <tr>
 <td><code><a href="reference/sim_scenario.html">sim_scenario()</a></code></td>

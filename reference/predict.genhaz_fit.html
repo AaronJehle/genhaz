@@ -51,8 +51,8 @@ Only the requested quantity is computed.</p>
 <span>  <span class="va">times</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hazard"</span>, <span class="st">"survival"</span>, <span class="st">"cumhaz"</span>, <span class="st">"rmst"</span>, <span class="st">"surv_diff"</span>, <span class="st">"rmst_diff"</span>,</span>
 <span>    <span class="st">"hazard_ratio"</span>, <span class="st">"time_ratio"</span>, <span class="st">"acc_factor"</span><span class="op">)</span>,</span>
-<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"confidence"</span><span class="op">)</span>,</span>
+<span>  level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  tau_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -96,15 +96,16 @@ so f(t) = beta1 in the constant-AFT limit and is directly comparable to
 beta1). The last five require exactly two rows in <code>newdata</code>.</p></dd>
 
 
-<dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>Significance level for confidence intervals. Default 0.05.</p></dd>
+<dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
+<dd><p>Type of interval to return, following <code><a href="https://rdrr.io/r/stats/predict.lm.html" class="external-link">stats::predict.lm()</a></code>.
+<code>"none"</code> (default) computes only the point <code>estimate</code> (skipping the
+delta-method gradients and any root-solving overhead they require) and
+returns the <code>lower</code>/<code>upper</code> columns as <code>NA</code>; <code>"confidence"</code> adds a
+delta-method Wald confidence interval.</p></dd>
 
 
-<dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>
-<dd><p>Logical; compute confidence intervals? When <code>FALSE</code>, only the
-point <code>estimate</code> is computed (skipping the delta-method gradients and any
-root-solving overhead they require) and the <code>lower</code>/<code>upper</code> columns are
-returned as <code>NA</code>. Default <code>TRUE</code>.</p></dd>
+<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
+<dd><p>Confidence level for <code>interval = "confidence"</code>. Default 0.95.</p></dd>
 
 
 <dt id="arg-tau-max">tau_max<a class="anchor" aria-label="anchor" href="#arg-tau-max"></a></dt>
@@ -125,7 +126,7 @@ pass a larger value to allow extrapolation. Ignored by all other types.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> of class <code>c("genhaz_pred", "data.frame")</code> with
 columns <code>pattern</code>, <code>time</code>, <code>estimate</code>, <code>lower</code>, <code>upper</code> (the latter two are
-<code>NA</code> when <code>ci = FALSE</code>). A <code>pred_type</code> attribute records which quantity was
+<code>NA</code> when <code>interval = "none"</code>). A <code>pred_type</code> attribute records which quantity was
 computed; <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> uses this to set axis labels automatically. For
 per-group types rows are grouped by covariate pattern; for two-group types
 a single block labelled <code>"group1 - group0"</code> (exposed - unexposed) is
@@ -139,7 +140,8 @@ returned.</p>
 <span class="r-in"><span><span class="va">nd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">nd</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Exposed"</span>, <span class="st">"Unexposed"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span></span>
+<span class="r-in"><span>        interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"rmst"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="va">t_grid</span>, type <span class="op">=</span> <span class="st">"surv_diff"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">nd</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span><span class="op">)</span></span></span>

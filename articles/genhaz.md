@@ -125,20 +125,37 @@ print(fit_melanoma)
 #>   EDF        : 15.80
 #>   AIC        : 24261.08
 #> 
-#> Covariate coefficients (Wald 95% CI):
-#>                   Estimate Std.Err       z  p.value lower.95% upper.95%
-#> beta1_X             1.1428  0.0857 13.3398  < 2e-16    0.9749    1.3107
-#> beta1_period       -0.0711  0.0763 -0.9317  0.35150   -0.2208    0.0785
-#> beta1_agegrp45-59   0.0764  0.1020  0.7492  0.45371   -0.1235    0.2764
-#> beta1_agegrp60-74   0.1117  0.1002  1.1146  0.26504   -0.0847    0.3081
-#> beta1_agegrp75+     0.2973  0.1190  2.4982  0.01248    0.0641    0.5306
-#> beta1_sexFemale    -0.1150  0.0738 -1.5576  0.11933   -0.2597    0.0297
-#> beta2_X             0.3055  0.0695  4.3925 1.12e-05    0.1692    0.4418
-#> beta2_period       -0.3054  0.0655 -4.6637 3.11e-06   -0.4338   -0.1771
-#> beta2_agegrp45-59   0.2457  0.0837  2.9358  0.00333    0.0817    0.4098
-#> beta2_agegrp60-74   0.5377  0.0821  6.5507 5.73e-11    0.3768    0.6985
-#> beta2_agegrp75+     0.8283  0.0997  8.3072  < 2e-16    0.6329    1.0238
-#> beta2_sexFemale    -0.4238  0.0609 -6.9558 3.51e-12   -0.5432   -0.3044
+#> Covariate coefficients:
+#>                   Estimate  Std.Err      z Pr(>|z|)    
+#> beta1_X            1.14275  0.08566 13.340  < 2e-16 ***
+#> beta1_period      -0.07113  0.07634 -0.932  0.35150    
+#> beta1_agegrp45-59  0.07644  0.10202  0.749  0.45371    
+#> beta1_agegrp60-74  0.11169  0.10021  1.115  0.26504    
+#> beta1_agegrp75+    0.29734  0.11902  2.498  0.01248 *  
+#> beta1_sexFemale   -0.11502  0.07384 -1.558  0.11933    
+#> beta2_X            0.30549  0.06955  4.392 1.12e-05 ***
+#> beta2_period      -0.30543  0.06549 -4.664 3.11e-06 ***
+#> beta2_agegrp45-59  0.24573  0.08370  2.936  0.00333 ** 
+#> beta2_agegrp60-74  0.53765  0.08208  6.551 5.73e-11 ***
+#> beta2_agegrp75+    0.82835  0.09971  8.307  < 2e-16 ***
+#> beta2_sexFemale   -0.42383  0.06093 -6.956 3.51e-12 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Exponentiated estimates (95% CI):
+#>                   exp(Est) lower .95 upper .95
+#> beta1_X             3.1354    2.6508    3.7086
+#> beta1_period        0.9313    0.8019    1.0817
+#> beta1_agegrp45-59   1.0794    0.8838    1.3184
+#> beta1_agegrp60-74   1.1182    0.9188    1.3608
+#> beta1_agegrp75+     1.3463    1.0662    1.7000
+#> beta1_sexFemale     0.8913    0.7712    1.0302
+#> beta2_X             1.3573    1.1843    1.5555
+#> beta2_period        0.7368    0.6481    0.8377
+#> beta2_agegrp45-59   1.2786    1.0851    1.5065
+#> beta2_agegrp60-74   1.7120    1.4576    2.0108
+#> beta2_agegrp75+     2.2895    1.8831    2.7837
+#> beta2_sexFemale     0.6545    0.5809    0.7376
 ```
 
 ``` r
@@ -153,33 +170,37 @@ summary(fit_melanoma)
 #>   EDF        : 15.80
 #>   AIC        : 24261.08
 #> 
-#> Covariate coefficients (Wald 95% CI):
-#>                   Estimate Std.Err       z  p.value    lower    upper exp(Est.)
-#> beta1_X            1.14275 0.08566 13.3398  < 2e-16  0.97485  1.31065    3.1354
-#> beta1_period      -0.07113 0.07634 -0.9317  0.35150 -0.22076  0.07850    0.9313
-#> beta1_agegrp45-59  0.07644 0.10202  0.7492  0.45371 -0.12351  0.27638    1.0794
-#> beta1_agegrp60-74  0.11169 0.10021  1.1146  0.26504 -0.08472  0.30809    1.1182
-#> beta1_agegrp75+    0.29734 0.11902  2.4982  0.01248  0.06406  0.53061    1.3463
-#> beta1_sexFemale   -0.11502 0.07384 -1.5576  0.11933 -0.25975  0.02971    0.8913
-#> beta2_X            0.30549 0.06955  4.3925 1.12e-05  0.16918  0.44180    1.3573
-#> beta2_period      -0.30543 0.06549 -4.6637 3.11e-06 -0.43378 -0.17707    0.7368
-#> beta2_agegrp45-59  0.24573 0.08370  2.9358  0.00333  0.08168  0.40978    1.2786
-#> beta2_agegrp60-74  0.53765 0.08208  6.5507 5.73e-11  0.37679  0.69852    1.7120
-#> beta2_agegrp75+    0.82835 0.09971  8.3072  < 2e-16  0.63291  1.02378    2.2895
-#> beta2_sexFemale   -0.42383 0.06093 -6.9558 3.51e-12 -0.54325 -0.30440    0.6545
-#>                   exp(lower) exp(upper)
-#> beta1_X               2.6508     3.7086
-#> beta1_period          0.8019     1.0817
-#> beta1_agegrp45-59     0.8838     1.3184
-#> beta1_agegrp60-74     0.9188     1.3608
-#> beta1_agegrp75+       1.0662     1.7000
-#> beta1_sexFemale       0.7712     1.0302
-#> beta2_X               1.1843     1.5555
-#> beta2_period          0.6481     0.8377
-#> beta2_agegrp45-59     1.0851     1.5065
-#> beta2_agegrp60-74     1.4576     2.0108
-#> beta2_agegrp75+       1.8831     2.7837
-#> beta2_sexFemale       0.5809     0.7376
+#> Covariate coefficients:
+#>                   Estimate  Std.Err      z Pr(>|z|)    
+#> beta1_X            1.14275  0.08566 13.340  < 2e-16 ***
+#> beta1_period      -0.07113  0.07634 -0.932  0.35150    
+#> beta1_agegrp45-59  0.07644  0.10202  0.749  0.45371    
+#> beta1_agegrp60-74  0.11169  0.10021  1.115  0.26504    
+#> beta1_agegrp75+    0.29734  0.11902  2.498  0.01248 *  
+#> beta1_sexFemale   -0.11502  0.07384 -1.558  0.11933    
+#> beta2_X            0.30549  0.06955  4.392 1.12e-05 ***
+#> beta2_period      -0.30543  0.06549 -4.664 3.11e-06 ***
+#> beta2_agegrp45-59  0.24573  0.08370  2.936  0.00333 ** 
+#> beta2_agegrp60-74  0.53765  0.08208  6.551 5.73e-11 ***
+#> beta2_agegrp75+    0.82835  0.09971  8.307  < 2e-16 ***
+#> beta2_sexFemale   -0.42383  0.06093 -6.956 3.51e-12 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Exponentiated estimates (95% CI):
+#>                   exp(Est) lower .95 upper .95
+#> beta1_X             3.1354    2.6508    3.7086
+#> beta1_period        0.9313    0.8019    1.0817
+#> beta1_agegrp45-59   1.0794    0.8838    1.3184
+#> beta1_agegrp60-74   1.1182    0.9188    1.3608
+#> beta1_agegrp75+     1.3463    1.0662    1.7000
+#> beta1_sexFemale     0.8913    0.7712    1.0302
+#> beta2_X             1.3573    1.1843    1.5555
+#> beta2_period        0.7368    0.6481    0.8377
+#> beta2_agegrp45-59   1.2786    1.0851    1.5065
+#> beta2_agegrp60-74   1.7120    1.4576    2.0108
+#> beta2_agegrp75+     2.2895    1.8831    2.7837
+#> beta2_sexFemale     0.6545    0.5809    0.7376
 ```
 
 Patients with non-localised disease progress through the baseline hazard
@@ -188,12 +209,12 @@ times higher hazard at every time point. Wald CIs for each:
 
 ``` r
 
-waldCI(fit_melanoma, "beta1_X")
-#>     lower     upper 
-#> 0.9748534 1.3106536
-waldCI(fit_melanoma, "beta2_X")
-#>     lower     upper 
-#> 0.1691757 0.4417983
+confint(fit_melanoma, "beta1_X")
+#>             2.5 %   97.5 %
+#> beta1_X 0.9748534 1.310654
+confint(fit_melanoma, "beta2_X")
+#>             2.5 %    97.5 %
+#> beta2_X 0.1691757 0.4417983
 ```
 
 ### Hazard and survival curves
@@ -207,7 +228,7 @@ Evaluated at age group 60–74, male sex, diagnosed 1985–94.
 ``` r
 
 plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "hazard",
-     col  = c("steelblue", "firebrick"),
+     interval = "confidence", col = c("steelblue", "firebrick"),
      xlab = "Time (months)", main = "Estimated hazard — melanoma, GH model")
 ```
 
@@ -216,7 +237,7 @@ plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "hazard",
 ``` r
 
 plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "survival",
-     col  = c("steelblue", "firebrick"),
+     interval = "confidence", col = c("steelblue", "firebrick"),
      xlab = "Time (months)", main = "Estimated survival — melanoma, GH model")
 ```
 
@@ -233,7 +254,8 @@ on the [`predict()`](https://rdrr.io/r/stats/predict.html) result.
 ``` r
 
 hr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio")
+                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio",
+                  interval = "confidence")
 plot(hr_mel, col = "purple",
      xlab = "Time (months)",
      main = "Time-varying HR — non-localised vs localised")
@@ -257,7 +279,8 @@ quadrature.
 ``` r
 
 diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
-                      times = new_time, type = "surv_diff")
+                      times = new_time, type = "surv_diff",
+                      interval = "confidence")
 plot(diff_s_mel,
      xlab = "Time (months)",
      main = "S(t | Non-localised) − S(t | Localised)")
@@ -270,7 +293,8 @@ abline(h = 0, lty = 3, col = "grey70")
 
 
 rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
-                    times = new_time, type = "rmst_diff")
+                    times = new_time, type = "rmst_diff",
+                    interval = "confidence")
 plot(rmst_mel,
      xlab = "Time (months)",
      main = "RMST(t | Non-localised) − RMST(t | Localised)")
@@ -296,7 +320,8 @@ non-localised level, so beyond an early window no $`\tau`$ exists
 ``` r
 
 tr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(2, 24, by = 2), type = "time_ratio")
+                  times = seq(2, 24, by = 2), type = "time_ratio",
+                  interval = "confidence")
 plot(tr_mel, col = "darkorange",
      xlab = "Time (months)", main = "Time ratio — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
@@ -328,7 +353,8 @@ This is a work in progress.
 ``` r
 
 af_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(2, 24, by = 2), type = "acc_factor")
+                  times = seq(2, 24, by = 2), type = "acc_factor",
+                  interval = "confidence")
 plot(af_mel, col = "purple",
      xlab = "Time (months)", main = "Acceleration effect f(t) — non-localised vs localised")
 abline(h = fit_melanoma$par["beta1_X"], lty = 2, col = "grey50")  # constant-AFT beta1
@@ -385,30 +411,36 @@ print(fit)
 #>   EDF        : 6.91
 #>   AIC        : 3521.11
 #> 
-#> Covariate coefficients (Wald 95% CI):
-#>         Estimate Std.Err      z  p.value lower.95% upper.95%
-#> beta1_X   0.4559  0.0465 9.8063  < 2e-16    0.3647    0.5470
-#> beta2_X   0.6135  0.1127 5.4424 5.26e-08    0.3926    0.8345
+#> Covariate coefficients:
+#>         Estimate Std.Err     z Pr(>|z|)    
+#> beta1_X  0.45585 0.04649 9.806  < 2e-16 ***
+#> beta2_X  0.61353 0.11273 5.442 5.26e-08 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> 
+#> Exponentiated estimates (95% CI):
+#>         exp(Est) lower .95 upper .95
+#> beta1_X   1.5775    1.4401    1.7280
+#> beta2_X   1.8469    1.4808    2.3036
 ```
 
 ### Inference
 
-[`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md)
-computes a Wald CI for a single parameter;
-[`waldCI_minus()`](https://aaronjehle.github.io/genhaz/reference/waldCI_minus.md)
-gives a CI for $`\beta_1 - \beta_2`$ (accounting for their covariance).
+[`confint()`](https://rdrr.io/r/stats/confint.html) gives Wald CIs for
+the parameters; with `diff = TRUE` it returns a CI for
+$`\beta_1 - \beta_2`$ (accounting for their covariance).
 
 ``` r
 
-waldCI(fit, "beta1_X")
-#>     lower     upper 
-#> 0.3647416 0.5469618
-waldCI(fit, "beta2_X")
-#>     lower     upper 
-#> 0.3925786 0.8344796
-waldCI_minus(fit, "beta1_X", "beta2_X")
-#>      lower      upper 
-#> -0.4629392  0.1475844
+confint(fit, "beta1_X")
+#>             2.5 %    97.5 %
+#> beta1_X 0.3647416 0.5469618
+confint(fit, "beta2_X")
+#>             2.5 %    97.5 %
+#> beta2_X 0.3925786 0.8344796
+confint(fit, c("beta1_X", "beta2_X"), diff = TRUE)
+#>                        2.5 %    97.5 %
+#> beta1_X - beta2_X -0.4629392 0.1475844
 ```
 
 Fit a restricted (PH) model and test against the full GH model:
@@ -426,9 +458,16 @@ fit_ph <- fit_genhaz(
   lcv_method = "optimize"
 )
 
-LR(fit_ph, fit)
-#> LR-statistic      p_value 
-#> 6.760761e+01 1.994956e-16
+anova(fit_ph, fit)
+#> Analysis of Deviance Table (likelihood ratio tests)
+#> 
+#>  Model 1: ~X, PH
+#>  Model 2: ~X, GH
+#>         Df  LogLik  Chisq Chi Df Pr(>Chisq)    
+#> Model 1  7 -1790.4                             
+#> Model 2  8 -1756.6 67.608      1  < 2.2e-16 ***
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ------------------------------------------------------------------------

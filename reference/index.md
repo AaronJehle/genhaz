@@ -24,12 +24,10 @@
 
 - [`CI()`](https://aaronjehle.github.io/genhaz/reference/CI.md) :
   Pointwise confidence bands for hazard and survival functions
-- [`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md)
-  : Wald confidence interval for a single parameter
-- [`waldCI_minus()`](https://aaronjehle.github.io/genhaz/reference/waldCI_minus.md)
-  : Wald confidence interval for the difference of two parameters
-- [`LR()`](https://aaronjehle.github.io/genhaz/reference/LR.md) :
-  Likelihood ratio test between nested GH models
+- [`confint(`*`<genhaz_fit>`*`)`](https://aaronjehle.github.io/genhaz/reference/confint.genhaz_fit.md)
+  : Wald confidence intervals for model parameters
+- [`anova(`*`<genhaz_fit>`*`)`](https://aaronjehle.github.io/genhaz/reference/anova.genhaz_fit.md)
+  : Likelihood ratio tests between nested GH models
 
 ## Post-processing
 
@@ -51,8 +49,6 @@
 
 - [`knot_pattern()`](https://aaronjehle.github.io/genhaz/reference/knot_pattern.md)
   : Compute knot positions from event times
-- [`plot_hazard()`](https://aaronjehle.github.io/genhaz/reference/plot_hazard.md)
-  : Plot estimated hazard function
 - [`translate_time()`](https://aaronjehle.github.io/genhaz/reference/translate_time.md)
   : Time-varying acceleration factor between two covariate patterns
 - [`translate_time2()`](https://aaronjehle.github.io/genhaz/reference/translate_time2.md)

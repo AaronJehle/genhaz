@@ -99,9 +99,9 @@ nd     <- data.frame(X = c(0, 1))
 rownames(nd) <- c("X = 0", "X = 1")
 
 plot(fit, newdata = nd, times = t_grid, type = "hazard",
-     col = c("steelblue", "firebrick"))
+     interval = "confidence", col = c("steelblue", "firebrick"))
 plot(fit, newdata = nd, times = t_grid, type = "survival",
-     col = c("steelblue", "firebrick"))
+     interval = "confidence", col = c("steelblue", "firebrick"))
 ```
 
 ------------------------------------------------------------------------
@@ -129,17 +129,24 @@ group labels:
 nd <- data.frame(X = c(1, 0))            # row 1 = exposed (group 1), row 2 = baseline (group 0)
 rownames(nd) <- c("Exposed", "Unexposed")
 
-pred <- predict(fit, newdata = nd, times = t_grid, type = "survival")
+pred <- predict(fit, newdata = nd, times = t_grid, type = "survival",
+                interval = "confidence")
 # type = "hazard" | "survival" | "cumhaz" | "rmst"
 #      | "surv_diff" | "rmst_diff" | "hazard_ratio" | "time_ratio" | "acc_factor"
 # returns a data.frame: pattern | time | estimate | lower | upper
 ```
 
+Following
+[`stats::predict.lm`](https://rdrr.io/r/stats/predict.lm.html),
+`interval = "none"` (the default) returns only the point `estimate`
+(`lower`/`upper` are `NA`); pass `interval = "confidence"` for a
+delta-method Wald CI, with `level` setting the confidence level (default
+0.95).
+
 The five two-group types require exactly two rows in `newdata`: **row 1
 is the exposed group (group 1)** and **row 2 the unexposed/baseline
-group (group 0)**. Results are labelled `"group1 - group0"` with
-delta-method confidence intervals (pass `ci = FALSE` to skip the CI
-computation and return only the estimate):
+group (group 0)**. Results are labelled `"group1 - group0"`; request CIs
+with `interval = "confidence"`:
 
 ``` r
 
@@ -154,12 +161,13 @@ predict(fit, newdata = nd, times = t_grid,  type = "acc_factor")   # f(t)=log ta
 
 acc_factor is work in progress
 
-**Plot** with automatic colours and delta-method confidence intervals:
+**Plot** with automatic colours; add `interval = "confidence"` for
+delta-method confidence bands:
 
 ``` r
 
-plot(fit, newdata = nd, times = t_grid)                  # hazard (default)
-plot(fit, newdata = nd, times = t_grid, type = "survival")
+plot(fit, newdata = nd, times = t_grid)                  # hazard (default), no bands
+plot(fit, newdata = nd, times = t_grid, type = "survival", interval = "confidence")
 plot(fit, newdata = nd, times = t_grid, col = c("steelblue", "firebrick"))
 ```
 
@@ -292,7 +300,7 @@ hazard** at every time point.
 ``` r
 
 plot(fit_adj, newdata = nd_mel, times = new.time, type = "survival",
-     col  = c("steelblue", "firebrick"),
+     interval = "confidence", col = c("steelblue", "firebrick"),
      xlab = "Time (months)", main = "Estimated survival — melanoma, GH model")
 ```
 
@@ -307,7 +315,8 @@ vs survPen
 ``` r
 
 hr_mel <- predict(fit_adj, newdata = nd_mel,
-                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio")
+                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio",
+                  interval = "confidence")
 plot(hr_mel, col = "purple",
      xlab = "Time (months)",
      main = "Time-varying HR — non-localised vs localised")
@@ -394,16 +403,14 @@ fit <- fit_genhaz(..., profile = TRUE, lcv_method = "optimize")
 | [`fit_genhaz()`](https://aaronjehle.github.io/genhaz/reference/fit_genhaz.md) | Fit a GH model (high-level interface) |
 | `print(fit)` | Concise model overview with Wald CIs |
 | `summary(fit)` | Full coefficient table with exponentiated estimates |
-| `predict(fit, newdata, times)` | Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio) with delta-method CIs; returns a `"genhaz_pred"` object |
+| `predict(fit, newdata, times)` | Hazard, survival, cumhaz, RMST, and two-group comparisons (differences, hazard ratio, time ratio); `interval = "confidence"` adds delta-method CIs at `level`; returns a `"genhaz_pred"` object |
 | `plot(pred)` | Plot a [`predict()`](https://rdrr.io/r/stats/predict.html) result — auto `ylim`, labels, legend, CI bands |
-| `plot(fit, newdata, times)` | Convenience wrapper: calls [`predict()`](https://rdrr.io/r/stats/predict.html) then [`plot()`](https://rdrr.io/r/graphics/plot.default.html) |
+| `plot(fit, newdata, times)` | Convenience wrapper: calls [`predict()`](https://rdrr.io/r/stats/predict.html) then [`plot()`](https://rdrr.io/r/graphics/plot.default.html) (`interval = "confidence"` for bands) |
 | [`post()`](https://aaronjehle.github.io/genhaz/reference/post.md) | Evaluate h, H, S and gradients at new (time, X) |
 | [`CI()`](https://aaronjehle.github.io/genhaz/reference/CI.md) | Pointwise confidence bands for h, H, S |
-| [`waldCI()`](https://aaronjehle.github.io/genhaz/reference/waldCI.md) | Wald CI for a single parameter |
-| [`waldCI_minus()`](https://aaronjehle.github.io/genhaz/reference/waldCI_minus.md) | Wald CI for the difference of two parameters |
-| [`LR()`](https://aaronjehle.github.io/genhaz/reference/LR.md) | Likelihood ratio test between nested models |
+| `confint(fit)` | Wald CIs for parameters (`diff = TRUE` for $`\beta_1-\beta_2`$) |
+| `anova(fit1, fit2)` | Likelihood ratio tests between nested models |
 | [`knot_pattern()`](https://aaronjehle.github.io/genhaz/reference/knot_pattern.md) | Place spline knots from event-time quantiles |
-| [`plot_hazard()`](https://aaronjehle.github.io/genhaz/reference/plot_hazard.md) | Quick hazard plot |
 | [`sim_scenario()`](https://aaronjehle.github.io/genhaz/reference/sim_scenario.md) | Simulate data from a named scenario |
 | [`mixWeibSc()`](https://aaronjehle.github.io/genhaz/reference/mixWeibSc.md) | True h / H / S for a named scenario |
 | [`genhaz_work()`](https://aaronjehle.github.io/genhaz/reference/genhaz_work.md) | Low-level workhorse (advanced use) |

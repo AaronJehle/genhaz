@@ -51,8 +51,8 @@ the full range of CI bands so no line is clipped.</p>
 <span>  <span class="va">times</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hazard"</span>, <span class="st">"survival"</span>, <span class="st">"cumhaz"</span>, <span class="st">"rmst"</span>, <span class="st">"surv_diff"</span>, <span class="st">"rmst_diff"</span>,</span>
 <span>    <span class="st">"hazard_ratio"</span>, <span class="st">"time_ratio"</span>, <span class="st">"acc_factor"</span><span class="op">)</span>,</span>
-<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  ci <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"confidence"</span><span class="op">)</span>,</span>
+<span>  level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  tau_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -82,13 +82,14 @@ Row names become legend labels.</p></dd>
 in <code>newdata</code>.</p></dd>
 
 
-<dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>Significance level for confidence bands. Default 0.05.</p></dd>
+<dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
+<dd><p>Passed to <code><a href="predict.genhaz_fit.html">predict.genhaz_fit()</a></code>. <code>"none"</code> (default) plots
+only the point estimate; <code>"confidence"</code> computes and overlays delta-method
+confidence bands.</p></dd>
 
 
-<dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>
-<dd><p>Logical; compute and draw confidence bands? When <code>FALSE</code>, only the
-point estimate is computed (faster) and plotted. Default <code>TRUE</code>.</p></dd>
+<dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
+<dd><p>Confidence level for <code>interval = "confidence"</code>. Default 0.95.</p></dd>
 
 
 <dt id="arg-tau-max">tau_max<a class="anchor" aria-label="anchor" href="#arg-tau-max"></a></dt>

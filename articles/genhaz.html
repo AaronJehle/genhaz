@@ -225,20 +225,37 @@ result:</p>
 <span><span class="co">#&gt;   EDF        : 15.80</span></span>
 <span><span class="co">#&gt;   AIC        : 24261.08</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariate coefficients (Wald 95% CI):</span></span>
-<span><span class="co">#&gt;                   Estimate Std.Err       z  p.value lower.95% upper.95%</span></span>
-<span><span class="co">#&gt; beta1_X             1.1428  0.0857 13.3398  &lt; 2e-16    0.9749    1.3107</span></span>
-<span><span class="co">#&gt; beta1_period       -0.0711  0.0763 -0.9317  0.35150   -0.2208    0.0785</span></span>
-<span><span class="co">#&gt; beta1_agegrp45-59   0.0764  0.1020  0.7492  0.45371   -0.1235    0.2764</span></span>
-<span><span class="co">#&gt; beta1_agegrp60-74   0.1117  0.1002  1.1146  0.26504   -0.0847    0.3081</span></span>
-<span><span class="co">#&gt; beta1_agegrp75+     0.2973  0.1190  2.4982  0.01248    0.0641    0.5306</span></span>
-<span><span class="co">#&gt; beta1_sexFemale    -0.1150  0.0738 -1.5576  0.11933   -0.2597    0.0297</span></span>
-<span><span class="co">#&gt; beta2_X             0.3055  0.0695  4.3925 1.12e-05    0.1692    0.4418</span></span>
-<span><span class="co">#&gt; beta2_period       -0.3054  0.0655 -4.6637 3.11e-06   -0.4338   -0.1771</span></span>
-<span><span class="co">#&gt; beta2_agegrp45-59   0.2457  0.0837  2.9358  0.00333    0.0817    0.4098</span></span>
-<span><span class="co">#&gt; beta2_agegrp60-74   0.5377  0.0821  6.5507 5.73e-11    0.3768    0.6985</span></span>
-<span><span class="co">#&gt; beta2_agegrp75+     0.8283  0.0997  8.3072  &lt; 2e-16    0.6329    1.0238</span></span>
-<span><span class="co">#&gt; beta2_sexFemale    -0.4238  0.0609 -6.9558 3.51e-12   -0.5432   -0.3044</span></span></code></pre></div>
+<span><span class="co">#&gt; Covariate coefficients:</span></span>
+<span><span class="co">#&gt;                   Estimate  Std.Err      z Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; beta1_X            1.14275  0.08566 13.340  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; beta1_period      -0.07113  0.07634 -0.932  0.35150    </span></span>
+<span><span class="co">#&gt; beta1_agegrp45-59  0.07644  0.10202  0.749  0.45371    </span></span>
+<span><span class="co">#&gt; beta1_agegrp60-74  0.11169  0.10021  1.115  0.26504    </span></span>
+<span><span class="co">#&gt; beta1_agegrp75+    0.29734  0.11902  2.498  0.01248 *  </span></span>
+<span><span class="co">#&gt; beta1_sexFemale   -0.11502  0.07384 -1.558  0.11933    </span></span>
+<span><span class="co">#&gt; beta2_X            0.30549  0.06955  4.392 1.12e-05 ***</span></span>
+<span><span class="co">#&gt; beta2_period      -0.30543  0.06549 -4.664 3.11e-06 ***</span></span>
+<span><span class="co">#&gt; beta2_agegrp45-59  0.24573  0.08370  2.936  0.00333 ** </span></span>
+<span><span class="co">#&gt; beta2_agegrp60-74  0.53765  0.08208  6.551 5.73e-11 ***</span></span>
+<span><span class="co">#&gt; beta2_agegrp75+    0.82835  0.09971  8.307  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; beta2_sexFemale   -0.42383  0.06093 -6.956 3.51e-12 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Exponentiated estimates (95% CI):</span></span>
+<span><span class="co">#&gt;                   exp(Est) lower .95 upper .95</span></span>
+<span><span class="co">#&gt; beta1_X             3.1354    2.6508    3.7086</span></span>
+<span><span class="co">#&gt; beta1_period        0.9313    0.8019    1.0817</span></span>
+<span><span class="co">#&gt; beta1_agegrp45-59   1.0794    0.8838    1.3184</span></span>
+<span><span class="co">#&gt; beta1_agegrp60-74   1.1182    0.9188    1.3608</span></span>
+<span><span class="co">#&gt; beta1_agegrp75+     1.3463    1.0662    1.7000</span></span>
+<span><span class="co">#&gt; beta1_sexFemale     0.8913    0.7712    1.0302</span></span>
+<span><span class="co">#&gt; beta2_X             1.3573    1.1843    1.5555</span></span>
+<span><span class="co">#&gt; beta2_period        0.7368    0.6481    0.8377</span></span>
+<span><span class="co">#&gt; beta2_agegrp45-59   1.2786    1.0851    1.5065</span></span>
+<span><span class="co">#&gt; beta2_agegrp60-74   1.7120    1.4576    2.0108</span></span>
+<span><span class="co">#&gt; beta2_agegrp75+     2.2895    1.8831    2.7837</span></span>
+<span><span class="co">#&gt; beta2_sexFemale     0.6545    0.5809    0.7376</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_melanoma</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Fitted generalized hazard model (genhaz)</span></span>
@@ -250,33 +267,37 @@ result:</p>
 <span><span class="co">#&gt;   EDF        : 15.80</span></span>
 <span><span class="co">#&gt;   AIC        : 24261.08</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariate coefficients (Wald 95% CI):</span></span>
-<span><span class="co">#&gt;                   Estimate Std.Err       z  p.value    lower    upper exp(Est.)</span></span>
-<span><span class="co">#&gt; beta1_X            1.14275 0.08566 13.3398  &lt; 2e-16  0.97485  1.31065    3.1354</span></span>
-<span><span class="co">#&gt; beta1_period      -0.07113 0.07634 -0.9317  0.35150 -0.22076  0.07850    0.9313</span></span>
-<span><span class="co">#&gt; beta1_agegrp45-59  0.07644 0.10202  0.7492  0.45371 -0.12351  0.27638    1.0794</span></span>
-<span><span class="co">#&gt; beta1_agegrp60-74  0.11169 0.10021  1.1146  0.26504 -0.08472  0.30809    1.1182</span></span>
-<span><span class="co">#&gt; beta1_agegrp75+    0.29734 0.11902  2.4982  0.01248  0.06406  0.53061    1.3463</span></span>
-<span><span class="co">#&gt; beta1_sexFemale   -0.11502 0.07384 -1.5576  0.11933 -0.25975  0.02971    0.8913</span></span>
-<span><span class="co">#&gt; beta2_X            0.30549 0.06955  4.3925 1.12e-05  0.16918  0.44180    1.3573</span></span>
-<span><span class="co">#&gt; beta2_period      -0.30543 0.06549 -4.6637 3.11e-06 -0.43378 -0.17707    0.7368</span></span>
-<span><span class="co">#&gt; beta2_agegrp45-59  0.24573 0.08370  2.9358  0.00333  0.08168  0.40978    1.2786</span></span>
-<span><span class="co">#&gt; beta2_agegrp60-74  0.53765 0.08208  6.5507 5.73e-11  0.37679  0.69852    1.7120</span></span>
-<span><span class="co">#&gt; beta2_agegrp75+    0.82835 0.09971  8.3072  &lt; 2e-16  0.63291  1.02378    2.2895</span></span>
-<span><span class="co">#&gt; beta2_sexFemale   -0.42383 0.06093 -6.9558 3.51e-12 -0.54325 -0.30440    0.6545</span></span>
-<span><span class="co">#&gt;                   exp(lower) exp(upper)</span></span>
-<span><span class="co">#&gt; beta1_X               2.6508     3.7086</span></span>
-<span><span class="co">#&gt; beta1_period          0.8019     1.0817</span></span>
-<span><span class="co">#&gt; beta1_agegrp45-59     0.8838     1.3184</span></span>
-<span><span class="co">#&gt; beta1_agegrp60-74     0.9188     1.3608</span></span>
-<span><span class="co">#&gt; beta1_agegrp75+       1.0662     1.7000</span></span>
-<span><span class="co">#&gt; beta1_sexFemale       0.7712     1.0302</span></span>
-<span><span class="co">#&gt; beta2_X               1.1843     1.5555</span></span>
-<span><span class="co">#&gt; beta2_period          0.6481     0.8377</span></span>
-<span><span class="co">#&gt; beta2_agegrp45-59     1.0851     1.5065</span></span>
-<span><span class="co">#&gt; beta2_agegrp60-74     1.4576     2.0108</span></span>
-<span><span class="co">#&gt; beta2_agegrp75+       1.8831     2.7837</span></span>
-<span><span class="co">#&gt; beta2_sexFemale       0.5809     0.7376</span></span></code></pre></div>
+<span><span class="co">#&gt; Covariate coefficients:</span></span>
+<span><span class="co">#&gt;                   Estimate  Std.Err      z Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; beta1_X            1.14275  0.08566 13.340  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; beta1_period      -0.07113  0.07634 -0.932  0.35150    </span></span>
+<span><span class="co">#&gt; beta1_agegrp45-59  0.07644  0.10202  0.749  0.45371    </span></span>
+<span><span class="co">#&gt; beta1_agegrp60-74  0.11169  0.10021  1.115  0.26504    </span></span>
+<span><span class="co">#&gt; beta1_agegrp75+    0.29734  0.11902  2.498  0.01248 *  </span></span>
+<span><span class="co">#&gt; beta1_sexFemale   -0.11502  0.07384 -1.558  0.11933    </span></span>
+<span><span class="co">#&gt; beta2_X            0.30549  0.06955  4.392 1.12e-05 ***</span></span>
+<span><span class="co">#&gt; beta2_period      -0.30543  0.06549 -4.664 3.11e-06 ***</span></span>
+<span><span class="co">#&gt; beta2_agegrp45-59  0.24573  0.08370  2.936  0.00333 ** </span></span>
+<span><span class="co">#&gt; beta2_agegrp60-74  0.53765  0.08208  6.551 5.73e-11 ***</span></span>
+<span><span class="co">#&gt; beta2_agegrp75+    0.82835  0.09971  8.307  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; beta2_sexFemale   -0.42383  0.06093 -6.956 3.51e-12 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Exponentiated estimates (95% CI):</span></span>
+<span><span class="co">#&gt;                   exp(Est) lower .95 upper .95</span></span>
+<span><span class="co">#&gt; beta1_X             3.1354    2.6508    3.7086</span></span>
+<span><span class="co">#&gt; beta1_period        0.9313    0.8019    1.0817</span></span>
+<span><span class="co">#&gt; beta1_agegrp45-59   1.0794    0.8838    1.3184</span></span>
+<span><span class="co">#&gt; beta1_agegrp60-74   1.1182    0.9188    1.3608</span></span>
+<span><span class="co">#&gt; beta1_agegrp75+     1.3463    1.0662    1.7000</span></span>
+<span><span class="co">#&gt; beta1_sexFemale     0.8913    0.7712    1.0302</span></span>
+<span><span class="co">#&gt; beta2_X             1.3573    1.1843    1.5555</span></span>
+<span><span class="co">#&gt; beta2_period        0.7368    0.6481    0.8377</span></span>
+<span><span class="co">#&gt; beta2_agegrp45-59   1.2786    1.0851    1.5065</span></span>
+<span><span class="co">#&gt; beta2_agegrp60-74   1.7120    1.4576    2.0108</span></span>
+<span><span class="co">#&gt; beta2_agegrp75+     2.2895    1.8831    2.7837</span></span>
+<span><span class="co">#&gt; beta2_sexFemale     0.6545    0.5809    0.7376</span></span></code></pre></div>
 <p>Patients with non-localised disease progress through the baseline
 hazard
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mover><mi>β</mi><mo accent="true">̂</mo></mover><mn>1</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\exp(\hat\beta_1)</annotation></semantics></math>
@@ -284,12 +305,12 @@ times faster and face a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><msub><mover><mi>β</mi><mo accent="true">̂</mo></mover><mn>2</mn></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\exp(\hat\beta_2)</annotation></semantics></math>
 times higher hazard at every time point. Wald CIs for each:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, <span class="st">"beta1_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     lower     upper </span></span>
-<span><span class="co">#&gt; 0.9748534 1.3106536</span></span>
-<span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     lower     upper </span></span>
-<span><span class="co">#&gt; 0.1691757 0.4417983</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, <span class="st">"beta1_X"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             2.5 %   97.5 %</span></span>
+<span><span class="co">#&gt; beta1_X 0.9748534 1.310654</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             2.5 %    97.5 %</span></span>
+<span><span class="co">#&gt; beta2_X 0.1691757 0.4417983</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="hazard-and-survival-curves">Hazard and survival curves<a class="anchor" aria-label="anchor" href="#hazard-and-survival-curves"></a>
@@ -300,12 +321,12 @@ full CI range so confidence bands are never clipped. Evaluated at age
 group 60–74, male sex, diagnosed 1985–94.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>, times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"hazard"</span>,</span>
-<span>     col  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
+<span>     interval <span class="op">=</span> <span class="st">"confidence"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Estimated hazard — melanoma, GH model"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="genhaz_files/figure-html/melanoma-hazard-plot-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>, times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span>
-<span>     col  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
+<span>     interval <span class="op">=</span> <span class="st">"confidence"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Estimated survival — melanoma, GH model"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="genhaz_files/figure-html/melanoma-survival-plot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
@@ -320,7 +341,8 @@ would be flat; the GH model captures the time variation.
 result.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hr_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span><span class="op">)</span></span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">200</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"hazard_ratio"</span>,</span>
+<span>                  interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hr_mel</span>, col <span class="op">=</span> <span class="st">"purple"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Time-varying HR — non-localised vs localised"</span><span class="op">)</span></span>
@@ -343,7 +365,8 @@ restriction time
 via 25-point Gauss-Legendre quadrature.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">diff_s_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                      times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"surv_diff"</span><span class="op">)</span></span>
+<span>                      times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"surv_diff"</span>,</span>
+<span>                      interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">diff_s_mel</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"S(t | Non-localised) − S(t | Localised)"</span><span class="op">)</span></span>
@@ -352,7 +375,8 @@ via 25-point Gauss-Legendre quadrature.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">rmst_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                    times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span><span class="op">)</span></span>
+<span>                    times <span class="op">=</span> <span class="va">new_time</span>, type <span class="op">=</span> <span class="st">"rmst_diff"</span>,</span>
+<span>                    interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">rmst_mel</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"RMST(t | Non-localised) − RMST(t | Localised)"</span><span class="op">)</span></span>
@@ -389,7 +413,8 @@ exists (returned <code>NA</code>) — we therefore use an in-support
 grid.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tr_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"time_ratio"</span><span class="op">)</span></span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"time_ratio"</span>,</span>
+<span>                  interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tr_mel</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Time ratio — non-localised vs localised"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="fl">1</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey50"</span><span class="op">)</span></span></code></pre></div>
@@ -423,7 +448,8 @@ cap applies, so we use the in-support grid.</p>
 <p>This is a work in progress.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">af_mel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_melanoma</span>, newdata <span class="op">=</span> <span class="va">nd_mel</span>,</span>
-<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"acc_factor"</span><span class="op">)</span></span>
+<span>                  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"acc_factor"</span>,</span>
+<span>                  interval <span class="op">=</span> <span class="st">"confidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">af_mel</span>, col <span class="op">=</span> <span class="st">"purple"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time (months)"</span>, main <span class="op">=</span> <span class="st">"Acceleration effect f(t) — non-localised vs localised"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>h <span class="op">=</span> <span class="va">fit_melanoma</span><span class="op">$</span><span class="va">par</span><span class="op">[</span><span class="st">"beta1_X"</span><span class="op">]</span>, lty <span class="op">=</span> <span class="fl">2</span>, col <span class="op">=</span> <span class="st">"grey50"</span><span class="op">)</span>  <span class="co"># constant-AFT beta1</span></span></code></pre></div>
@@ -474,27 +500,34 @@ on a grid for comparison with fitted estimates.</p>
 <span><span class="co">#&gt;   EDF        : 6.91</span></span>
 <span><span class="co">#&gt;   AIC        : 3521.11</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariate coefficients (Wald 95% CI):</span></span>
-<span><span class="co">#&gt;         Estimate Std.Err      z  p.value lower.95% upper.95%</span></span>
-<span><span class="co">#&gt; beta1_X   0.4559  0.0465 9.8063  &lt; 2e-16    0.3647    0.5470</span></span>
-<span><span class="co">#&gt; beta2_X   0.6135  0.1127 5.4424 5.26e-08    0.3926    0.8345</span></span></code></pre></div>
+<span><span class="co">#&gt; Covariate coefficients:</span></span>
+<span><span class="co">#&gt;         Estimate Std.Err     z Pr(&gt;|z|)    </span></span>
+<span><span class="co">#&gt; beta1_X  0.45585 0.04649 9.806  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; beta2_X  0.61353 0.11273 5.442 5.26e-08 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Exponentiated estimates (95% CI):</span></span>
+<span><span class="co">#&gt;         exp(Est) lower .95 upper .95</span></span>
+<span><span class="co">#&gt; beta1_X   1.5775    1.4401    1.7280</span></span>
+<span><span class="co">#&gt; beta2_X   1.8469    1.4808    2.3036</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="inference">Inference<a class="anchor" aria-label="anchor" href="#inference"></a>
 </h3>
-<p><code><a href="../reference/waldCI.html">waldCI()</a></code> computes a Wald CI for a single parameter;
-<code><a href="../reference/waldCI_minus.html">waldCI_minus()</a></code> gives a CI for
+<p><code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> gives Wald CIs for the parameters; with
+<code>diff = TRUE</code> it returns a CI for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mn>1</mn></msub><mo>−</mo><msub><mi>β</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\beta_1 - \beta_2</annotation></semantics></math>
 (accounting for their covariance).</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta1_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     lower     upper </span></span>
-<span><span class="co">#&gt; 0.3647416 0.5469618</span></span>
-<span><span class="fu"><a href="../reference/waldCI.html">waldCI</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     lower     upper </span></span>
-<span><span class="co">#&gt; 0.3925786 0.8344796</span></span>
-<span><span class="fu"><a href="../reference/waldCI_minus.html">waldCI_minus</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta1_X"</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      lower      upper </span></span>
-<span><span class="co">#&gt; -0.4629392  0.1475844</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta1_X"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             2.5 %    97.5 %</span></span>
+<span><span class="co">#&gt; beta1_X 0.3647416 0.5469618</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"beta2_X"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             2.5 %    97.5 %</span></span>
+<span><span class="co">#&gt; beta2_X 0.3925786 0.8344796</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"beta1_X"</span>, <span class="st">"beta2_X"</span><span class="op">)</span>, diff <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                        2.5 %    97.5 %</span></span>
+<span><span class="co">#&gt; beta1_X - beta2_X -0.4629392 0.1475844</span></span></code></pre></div>
 <p>Fit a restricted (PH) model and test against the full GH model:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_ph</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_genhaz.html">fit_genhaz</a></span><span class="op">(</span></span>
@@ -508,9 +541,16 @@ on a grid for comparison with fitted estimates.</p>
 <span>  lcv_method <span class="op">=</span> <span class="st">"optimize"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/LR.html">LR</a></span><span class="op">(</span><span class="va">fit_ph</span>, <span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; LR-statistic      p_value </span></span>
-<span><span class="co">#&gt; 6.760761e+01 1.994956e-16</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">fit_ph</span>, <span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Analysis of Deviance Table (likelihood ratio tests)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  Model 1: ~X, PH</span></span>
+<span><span class="co">#&gt;  Model 2: ~X, GH</span></span>
+<span><span class="co">#&gt;         Df  LogLik  Chisq Chi Df Pr(&gt;Chisq)    </span></span>
+<span><span class="co">#&gt; Model 1  7 -1790.4                             </span></span>
+<span><span class="co">#&gt; Model 2  8 -1756.6 67.608      1  &lt; 2.2e-16 ***</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
 <hr>
 </div>
 </div>

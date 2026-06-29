@@ -7,7 +7,8 @@
 <url><loc>https://aaronjehle.github.io/genhaz/authors.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/index.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/CI.html</loc></url>
-<url><loc>https://aaronjehle.github.io/genhaz/reference/LR.html</loc></url>
+<url><loc>https://aaronjehle.github.io/genhaz/reference/anova.genhaz_fit.html</loc></url>
+<url><loc>https://aaronjehle.github.io/genhaz/reference/confint.genhaz_fit.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/crs_cpp.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/fit_genhaz.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/fit_melanoma.html</loc></url>
@@ -20,7 +21,6 @@
 <url><loc>https://aaronjehle.github.io/genhaz/reference/mixture_weibull.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/plot.genhaz_fit.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/plot.genhaz_pred.html</loc></url>
-<url><loc>https://aaronjehle.github.io/genhaz/reference/plot_hazard.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/post.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/predict.genhaz_fit.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/print.genhaz_fit.html</loc></url>
@@ -32,7 +32,5 @@
 <url><loc>https://aaronjehle.github.io/genhaz/reference/summary.genhaz_fit.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/translate_time.html</loc></url>
 <url><loc>https://aaronjehle.github.io/genhaz/reference/translate_time2.html</loc></url>
-<url><loc>https://aaronjehle.github.io/genhaz/reference/waldCI.html</loc></url>
-<url><loc>https://aaronjehle.github.io/genhaz/reference/waldCI_minus.html</loc></url>
 </urlset>
 
