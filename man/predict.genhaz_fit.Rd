@@ -10,8 +10,8 @@
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
     "hazard_ratio", "time_ratio", "acc_factor"),
-  alpha = 0.05,
-  ci = TRUE,
+  interval = c("none", "confidence"),
+  level = 0.95,
   tau_max = NULL,
   ...
 )
@@ -43,12 +43,13 @@ integral_0^t exp(f(u) X) du with instantaneous rate exp(f(t) X) = tau'(t),
 so f(t) = beta1 in the constant-AFT limit and is directly comparable to
 beta1). The last five require exactly two rows in \code{newdata}.}
 
-\item{alpha}{Significance level for confidence intervals. Default 0.05.}
+\item{interval}{Type of interval to return, following \code{\link[stats:predict.lm]{stats::predict.lm()}}.
+\code{"none"} (default) computes only the point \code{estimate} (skipping the
+delta-method gradients and any root-solving overhead they require) and
+returns the \code{lower}/\code{upper} columns as \code{NA}; \code{"confidence"} adds a
+delta-method Wald confidence interval.}
 
-\item{ci}{Logical; compute confidence intervals? When \code{FALSE}, only the
-point \code{estimate} is computed (skipping the delta-method gradients and any
-root-solving overhead they require) and the \code{lower}/\code{upper} columns are
-returned as \code{NA}. Default \code{TRUE}.}
+\item{level}{Confidence level for \code{interval = "confidence"}. Default 0.95.}
 
 \item{tau_max}{Upper bound for the equal-cumulative-hazard time tau solved by
 \code{"time_ratio"} and \code{"acc_factor"}. Defaults to the model support
@@ -63,7 +64,7 @@ pass a larger value to allow extrapolation. Ignored by all other types.}
 \value{
 A \code{data.frame} of class \code{c("genhaz_pred", "data.frame")} with
 columns \code{pattern}, \code{time}, \code{estimate}, \code{lower}, \code{upper} (the latter two are
-\code{NA} when \code{ci = FALSE}). A \code{pred_type} attribute records which quantity was
+\code{NA} when \code{interval = "none"}). A \code{pred_type} attribute records which quantity was
 computed; \code{plot()} uses this to set axis labels automatically. For
 per-group types rows are grouped by covariate pattern; for two-group types
 a single block labelled \code{"group1 - group0"} (exposed - unexposed) is
@@ -80,7 +81,8 @@ t_grid <- seq(0.01, 8, length.out = 200)
 nd <- data.frame(X = c(1, 0))
 rownames(nd) <- c("Exposed", "Unexposed")
 
-predict(fit, newdata = nd, times = t_grid, type = "survival")
+predict(fit, newdata = nd, times = t_grid, type = "survival",
+        interval = "confidence")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
 predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")

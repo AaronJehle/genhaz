@@ -10,8 +10,8 @@
   times,
   type = c("hazard", "survival", "cumhaz", "rmst", "surv_diff", "rmst_diff",
     "hazard_ratio", "time_ratio", "acc_factor"),
-  alpha = 0.05,
-  ci = TRUE,
+  interval = c("none", "confidence"),
+  level = 0.95,
   tau_max = NULL,
   ...
 )
@@ -29,10 +29,11 @@ Row names become legend labels.}
 \code{"time_ratio"}, or \code{"acc_factor"}. The last five require exactly two rows
 in \code{newdata}.}
 
-\item{alpha}{Significance level for confidence bands. Default 0.05.}
+\item{interval}{Passed to \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}}. \code{"none"} (default) plots
+only the point estimate; \code{"confidence"} computes and overlays delta-method
+confidence bands.}
 
-\item{ci}{Logical; compute and draw confidence bands? When \code{FALSE}, only the
-point estimate is computed (faster) and plotted. Default \code{TRUE}.}
+\item{level}{Confidence level for \code{interval = "confidence"}. Default 0.95.}
 
 \item{tau_max}{Passed to \code{\link[=predict.genhaz_fit]{predict.genhaz_fit()}}; upper bound for the time
 warp used by \code{"time_ratio"} and \code{"acc_factor"}. Default \code{NULL} (model

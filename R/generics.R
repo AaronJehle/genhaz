@@ -45,18 +45,20 @@ print.genhaz_fit <- function(x, digits = 4, alpha = 0.05, ...) {
     z_crit <- qnorm(1 - alpha / 2)
     est    <- x$par[cov_idx]
     se     <- x$se[cov_idx]
-    ci_label <- paste0(round((1 - alpha) * 100), "%")
-    tab <- data.frame(
-      Estimate              = round(est,                    digits),
-      Std.Err               = round(se,                    digits),
-      z                     = round(x$z[cov_idx],          digits),
-      p.value               = format.pval(x$p_values[cov_idx], digits = 3),
-      lower                 = round(est - z_crit * se,     digits),
-      upper                 = round(est + z_crit * se,     digits)
-    )
-    colnames(tab)[5:6] <- paste0(c("lower.", "upper."), ci_label)
-    cat(sprintf("Covariate coefficients (Wald %s CI):\n", ci_label))
-    print(tab)
+    lbl    <- round((1 - alpha) * 100)
+
+    coef_mat <- cbind(Estimate = est, Std.Err = se,
+                      z = x$z[cov_idx], `Pr(>|z|)` = x$p_values[cov_idx])
+    cat("Covariate coefficients:\n")
+    printCoefmat(coef_mat, digits = digits, has.Pvalue = TRUE, P.values = TRUE,
+                 cs.ind = 1:2, tst.ind = 3L, signif.stars = TRUE)
+
+    exp_mat <- cbind(exp(est), exp(est - z_crit * se), exp(est + z_crit * se))
+    dimnames(exp_mat) <- list(names(est),
+                              c("exp(Est)", paste0("lower .", lbl),
+                                paste0("upper .", lbl)))
+    cat(sprintf("\nExponentiated estimates (%d%% CI):\n", lbl))
+    print(round(exp_mat, digits))
   }
 
   invisible(x)
@@ -148,17 +150,20 @@ print.summary.genhaz_fit <- function(x, digits = 4, ...) {
   cat(sprintf("  EDF        : %.2f\n", x$edf))
   cat(sprintf("  AIC        : %.2f\n\n", x$AIC))
 
-  ci_label <- paste0(round((1 - x$alpha) * 100), "% CI")
-  cat(sprintf("Covariate coefficients (Wald %s):\n", ci_label))
+  lbl <- round((1 - x$alpha) * 100)
+  ct  <- x$coef_tab
 
-  tab <- x$coef_tab
-  tab$p.value <- format.pval(tab$p.value, digits = 3)
-  colnames(tab) <- c(
-    "Estimate", "Std.Err", "z", "p.value",
-    "lower", "upper",
-    "exp(Est.)", "exp(lower)", "exp(upper)"
-  )
-  print(tab, digits = digits)
+  coef_mat <- as.matrix(ct[, c("Estimate", "Std.Err", "z", "p.value")])
+  colnames(coef_mat) <- c("Estimate", "Std.Err", "z", "Pr(>|z|)")
+  cat("Covariate coefficients:\n")
+  printCoefmat(coef_mat, digits = digits, has.Pvalue = TRUE, P.values = TRUE,
+               cs.ind = 1:2, tst.ind = 3L, signif.stars = TRUE)
+
+  exp_mat <- as.matrix(ct[, c("exp.Est", "exp.lower", "exp.upper")])
+  colnames(exp_mat) <- c("exp(Est)", paste0("lower .", lbl),
+                         paste0("upper .", lbl))
+  cat(sprintf("\nExponentiated estimates (%d%% CI):\n", lbl))
+  print(round(exp_mat, digits))
 
   invisible(x)
 }
@@ -217,11 +222,12 @@ warn_tau_support <- function(estimate, times, tau_max, type) {
 #'   integral_0^t exp(f(u) X) du with instantaneous rate exp(f(t) X) = tau'(t),
 #'   so f(t) = beta1 in the constant-AFT limit and is directly comparable to
 #'   beta1). The last five require exactly two rows in `newdata`.
-#' @param alpha Significance level for confidence intervals. Default 0.05.
-#' @param ci Logical; compute confidence intervals? When `FALSE`, only the
-#'   point `estimate` is computed (skipping the delta-method gradients and any
-#'   root-solving overhead they require) and the `lower`/`upper` columns are
-#'   returned as `NA`. Default `TRUE`.
+#' @param interval Type of interval to return, following [stats::predict.lm()].
+#'   `"none"` (default) computes only the point `estimate` (skipping the
+#'   delta-method gradients and any root-solving overhead they require) and
+#'   returns the `lower`/`upper` columns as `NA`; `"confidence"` adds a
+#'   delta-method Wald confidence interval.
+#' @param level Confidence level for `interval = "confidence"`. Default 0.95.
 #' @param tau_max Upper bound for the equal-cumulative-hazard time tau solved by
 #'   `"time_ratio"` and `"acc_factor"`. Defaults to the model support
 #'   `exp(max(object$knots))` (the largest knot, beyond which the spline is pure
@@ -233,7 +239,7 @@ warn_tau_support <- function(estimate, times, tau_max, type) {
 #'
 #' @return A `data.frame` of class `c("genhaz_pred", "data.frame")` with
 #'   columns `pattern`, `time`, `estimate`, `lower`, `upper` (the latter two are
-#'   `NA` when `ci = FALSE`). A `pred_type` attribute records which quantity was
+#'   `NA` when `interval = "none"`). A `pred_type` attribute records which quantity was
 #'   computed; `plot()` uses this to set axis labels automatically. For
 #'   per-group types rows are grouped by covariate pattern; for two-group types
 #'   a single block labelled `"group1 - group0"` (exposed - unexposed) is
@@ -246,7 +252,8 @@ warn_tau_support <- function(estimate, times, tau_max, type) {
 #' nd <- data.frame(X = c(1, 0))
 #' rownames(nd) <- c("Exposed", "Unexposed")
 #'
-#' predict(fit, newdata = nd, times = t_grid, type = "survival")
+#' predict(fit, newdata = nd, times = t_grid, type = "survival",
+#'         interval = "confidence")
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst")
 #' predict(fit, newdata = nd, times = t_grid, type = "surv_diff")
 #' predict(fit, newdata = nd, times = c(1, 2, 5), type = "rmst_diff")
@@ -259,9 +266,12 @@ predict.genhaz_fit <- function(object, newdata, times,
                                          "rmst", "surv_diff", "rmst_diff",
                                          "hazard_ratio", "time_ratio",
                                          "acc_factor"),
-                               alpha = 0.05, ci = TRUE, tau_max = NULL, ...) {
+                               interval = c("none", "confidence"),
+                               level = 0.95, tau_max = NULL, ...) {
   fit       <- object
   type      <- match.arg(type)
+  interval  <- match.arg(interval)
+  ci        <- interval == "confidence"
   # Upper bound for the equal-cumulative-hazard time tau used by "time_ratio"
   # and "acc_factor". Beyond the largest knot the spline is pure linear
   # extrapolation, so by default we do not search the warp past the model
@@ -270,7 +280,7 @@ predict.genhaz_fit <- function(object, newdata, times,
   X_mat     <- model.matrix(fit$formula, newdata)[, -1L, drop = FALSE]
   patterns  <- rownames(newdata)
   var_theta <- fit$var
-  z         <- qnorm(1 - alpha / 2)
+  z         <- qnorm(1 - (1 - level) / 2)
 
   # ---- two-group comparison types ------------------------------------------
   if (type %in% c("surv_diff", "rmst_diff", "hazard_ratio", "time_ratio",
@@ -642,9 +652,10 @@ plot.genhaz_pred <- function(x, col = NULL, lty = 1,
 #'   `"cumhaz"`, `"rmst"`, `"surv_diff"`, `"rmst_diff"`, `"hazard_ratio"`,
 #'   `"time_ratio"`, or `"acc_factor"`. The last five require exactly two rows
 #'   in `newdata`.
-#' @param alpha Significance level for confidence bands. Default 0.05.
-#' @param ci Logical; compute and draw confidence bands? When `FALSE`, only the
-#'   point estimate is computed (faster) and plotted. Default `TRUE`.
+#' @param interval Passed to [predict.genhaz_fit()]. `"none"` (default) plots
+#'   only the point estimate; `"confidence"` computes and overlays delta-method
+#'   confidence bands.
+#' @param level Confidence level for `interval = "confidence"`. Default 0.95.
 #' @param tau_max Passed to [predict.genhaz_fit()]; upper bound for the time
 #'   warp used by `"time_ratio"` and `"acc_factor"`. Default `NULL` (model
 #'   support).
@@ -673,10 +684,13 @@ plot.genhaz_fit <- function(x, newdata, times,
                                       "rmst", "surv_diff", "rmst_diff",
                                       "hazard_ratio", "time_ratio",
                                       "acc_factor"),
-                            alpha = 0.05, ci = TRUE, tau_max = NULL, ...) {
-  type <- match.arg(type)
+                            interval = c("none", "confidence"),
+                            level = 0.95, tau_max = NULL, ...) {
+  type     <- match.arg(type)
+  interval <- match.arg(interval)
   pred <- stats::predict(x, newdata = newdata, times = times,
-                         type = type, alpha = alpha, ci = ci, tau_max = tau_max)
-  plot(pred, ci = ci, ...)
+                         type = type, interval = interval, level = level,
+                         tau_max = tau_max)
+  plot(pred, ci = interval == "confidence", ...)
   invisible(pred)
 }

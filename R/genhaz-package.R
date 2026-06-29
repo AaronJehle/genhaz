@@ -5,8 +5,8 @@
 #' @useDynLib genhaz, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @importFrom survival Surv
-#' @importFrom stats as.formula integrate model.matrix nlminb optimize
-#'   pchisq pnorm qnorm quantile rbinom runif uniroot
+#' @importFrom stats anova as.formula confint integrate model.matrix nlminb
+#'   optimize pchisq pnorm printCoefmat qnorm quantile rbinom runif uniroot
 #' @importFrom utils tail
 ## usethis namespace: end
 NULL

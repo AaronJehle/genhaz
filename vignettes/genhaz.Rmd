@@ -134,8 +134,8 @@ $\exp(\hat\beta_1)$ times faster and face a $\exp(\hat\beta_2)$ times higher
 hazard at every time point. Wald CIs for each:
 
 ```{r melanoma-waldci}
-waldCI(fit_melanoma, "beta1_X")
-waldCI(fit_melanoma, "beta2_X")
+confint(fit_melanoma, "beta1_X")
+confint(fit_melanoma, "beta2_X")
 ```
 
 ### Hazard and survival curves
@@ -146,13 +146,13 @@ Evaluated at age group 60–74, male sex, diagnosed 1985–94.
 
 ```{r melanoma-hazard-plot}
 plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "hazard",
-     col  = c("steelblue", "firebrick"),
+     interval = "confidence", col = c("steelblue", "firebrick"),
      xlab = "Time (months)", main = "Estimated hazard — melanoma, GH model")
 ```
 
 ```{r melanoma-survival-plot}
 plot(fit_melanoma, newdata = nd_mel, times = new_time, type = "survival",
-     col  = c("steelblue", "firebrick"),
+     interval = "confidence", col = c("steelblue", "firebrick"),
      xlab = "Time (months)", main = "Estimated survival — melanoma, GH model")
 ```
 
@@ -165,7 +165,8 @@ the time variation.
 
 ```{r melanoma-hr}
 hr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio")
+                  times = seq(0.5, 200, by = 0.5), type = "hazard_ratio",
+                  interval = "confidence")
 plot(hr_mel, col = "purple",
      xlab = "Time (months)",
      main = "Time-varying HR — non-localised vs localised")
@@ -186,14 +187,16 @@ time $\tau$ via 25-point Gauss-Legendre quadrature.
 
 ```{r melanoma-differences}
 diff_s_mel <- predict(fit_melanoma, newdata = nd_mel,
-                      times = new_time, type = "surv_diff")
+                      times = new_time, type = "surv_diff",
+                      interval = "confidence")
 plot(diff_s_mel,
      xlab = "Time (months)",
      main = "S(t | Non-localised) − S(t | Localised)")
 abline(h = 0, lty = 3, col = "grey70")
 
 rmst_mel <- predict(fit_melanoma, newdata = nd_mel,
-                    times = new_time, type = "rmst_diff")
+                    times = new_time, type = "rmst_diff",
+                    interval = "confidence")
 plot(rmst_mel,
      xlab = "Time (months)",
      main = "RMST(t | Non-localised) − RMST(t | Localised)")
@@ -215,7 +218,8 @@ above the non-localised level, so beyond an early window no $\tau$ exists
 
 ```{r melanoma-time-ratio}
 tr_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(2, 24, by = 2), type = "time_ratio")
+                  times = seq(2, 24, by = 2), type = "time_ratio",
+                  interval = "confidence")
 plot(tr_mel, col = "darkorange",
      xlab = "Time (months)", main = "Time ratio — non-localised vs localised")
 abline(h = 1, lty = 2, col = "grey50")
@@ -239,7 +243,8 @@ This is a work in progress.
 
 ```{r melanoma-acc-factor}
 af_mel <- predict(fit_melanoma, newdata = nd_mel,
-                  times = seq(2, 24, by = 2), type = "acc_factor")
+                  times = seq(2, 24, by = 2), type = "acc_factor",
+                  interval = "confidence")
 plot(af_mel, col = "purple",
      xlab = "Time (months)", main = "Acceleration effect f(t) — non-localised vs localised")
 abline(h = fit_melanoma$par["beta1_X"], lty = 2, col = "grey50")  # constant-AFT beta1
@@ -278,13 +283,13 @@ print(fit)
 
 ### Inference
 
-`waldCI()` computes a Wald CI for a single parameter; `waldCI_minus()` gives a
+`confint()` gives Wald CIs for the parameters; with `diff = TRUE` it returns a
 CI for $\beta_1 - \beta_2$ (accounting for their covariance).
 
 ```{r waldci}
-waldCI(fit, "beta1_X")
-waldCI(fit, "beta2_X")
-waldCI_minus(fit, "beta1_X", "beta2_X")
+confint(fit, "beta1_X")
+confint(fit, "beta2_X")
+confint(fit, c("beta1_X", "beta2_X"), diff = TRUE)
 ```
 
 Fit a restricted (PH) model and test against the full GH model:
@@ -301,7 +306,7 @@ fit_ph <- fit_genhaz(
   lcv_method = "optimize"
 )
 
-LR(fit_ph, fit)
+anova(fit_ph, fit)
 ```
 
 ---

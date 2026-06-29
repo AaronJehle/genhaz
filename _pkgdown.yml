@@ -32,9 +32,8 @@ reference:
 - title: Inference
   contents:
   - CI
-  - waldCI
-  - waldCI_minus
-  - LR
+  - confint.genhaz_fit
+  - anova.genhaz_fit
 - title: Post-processing
   contents: post
 - title: Simulation
@@ -46,7 +45,6 @@ reference:
 - title: Utilities
   contents:
   - knot_pattern
-  - plot_hazard
   - translate_time
   - translate_time2
 - title: Data

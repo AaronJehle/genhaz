@@ -25,7 +25,8 @@ test_that("acc_factor estimate equals f = log(h1(t)/h0(tau)) with H0(tau)=H1(t)"
   fit   <- .fit_gen
   times <- c(0.5, 1, 2, 3)
 
-  pr <- predict(fit, newdata = .nd_gen, times = times, type = "acc_factor")
+  pr <- predict(fit, newdata = .nd_gen, times = times, type = "acc_factor",
+                interval = "confidence")
 
   # manual: observe row 1 (X = 0) at t, warp row 2 (X = 1)
   f_manual <- vapply(times, function(t) {
@@ -83,7 +84,8 @@ test_that("acc_factor delta-method variance matches theta-perturbation FD", {
     log(post(f2, 0, t, "h") / post(f2, 1, tau, "h"))
   }
 
-  pr <- predict(fit, newdata = .nd_gen, times = times, type = "acc_factor")
+  pr <- predict(fit, newdata = .nd_gen, times = times, type = "acc_factor",
+                interval = "confidence")
   # variance implied by the returned (symmetric) CI on the effect scale
   var_pred <- ((pr$estimate - pr$lower) / z)^2
 
@@ -107,7 +109,7 @@ test_that("time_ratio warps row 2 (TR < 1 when the warped group has higher hazar
   fit   <- .fit_gen
   times <- c(1, 2, 3)
   tr <- predict(fit, newdata = .nd_gen, times = times, type = "time_ratio",
-                ci = FALSE)
+                interval = "none")
   # row 2 (X = 1) has the higher hazard, so it reaches row 1's cumulative
   # hazard earlier: tau < t, i.e. TR < 1.
   expect_true(all(tr$estimate < 1))
@@ -143,21 +145,25 @@ test_that("time_ratio/acc_factor cap tau at tau_max with NA + warning", {
   }
 })
 
-test_that("ci = FALSE returns NA bounds and unchanged point estimates", {
+test_that("interval = 'none' returns NA bounds and unchanged point estimates", {
   fit   <- .fit_gen
   times <- c(0.5, 1, 2, 3)
 
   for (ty in c("hazard", "survival", "cumhaz", "rmst")) {
-    full <- predict(fit, newdata = .nd_gen, times = times, type = ty)
-    noci <- predict(fit, newdata = .nd_gen, times = times, type = ty, ci = FALSE)
+    full <- predict(fit, newdata = .nd_gen, times = times, type = ty,
+                    interval = "confidence")
+    noci <- predict(fit, newdata = .nd_gen, times = times, type = ty,
+                    interval = "none")
     expect_true(all(is.na(noci$lower)) && all(is.na(noci$upper)), info = ty)
     expect_equal(noci$estimate, full$estimate, tolerance = 1e-8, info = ty)
   }
 
   for (ty in c("surv_diff", "rmst_diff", "hazard_ratio", "time_ratio",
                "acc_factor")) {
-    full <- predict(fit, newdata = .nd_gen, times = times, type = ty)
-    noci <- predict(fit, newdata = .nd_gen, times = times, type = ty, ci = FALSE)
+    full <- predict(fit, newdata = .nd_gen, times = times, type = ty,
+                    interval = "confidence")
+    noci <- predict(fit, newdata = .nd_gen, times = times, type = ty,
+                    interval = "none")
     expect_true(all(is.na(noci$lower)) && all(is.na(noci$upper)), info = ty)
     expect_equal(noci$estimate, full$estimate, tolerance = 1e-8, info = ty)
   }

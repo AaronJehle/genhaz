@@ -1,12 +1,19 @@
-#' Likelihood ratio test between nested GH models
+#' Likelihood ratio tests between nested GH models
 #'
-#' Computes a chi-squared likelihood ratio test statistic comparing a nested
-#' (restricted) model against a more general model.
+#' Compares two or more nested `"genhaz_fit"` models with chi-squared
+#' likelihood-ratio tests, in the style of [stats::anova()] for `lm`/`glm`
+#' objects. Models are compared sequentially in the order supplied, so list the
+#' most restricted model first.
 #'
-#' @param fit_nested Fitted model object (the restricted model).
-#' @param fit_general Fitted model object (the general model).
+#' @param object A `"genhaz_fit"` object from [fit_genhaz()] (the first, usually
+#'   most restricted, model).
+#' @param ... One or more further `"genhaz_fit"` objects to compare against
+#'   `object`. Non-`"genhaz_fit"` arguments are ignored.
 #'
-#' @return Named numeric vector with `LR-statistic` and `p_value`.
+#' @return An analysis-of-deviance table of class `c("anova", "data.frame")`
+#'   with one row per model and columns `Df` (model degrees of freedom),
+#'   `LogLik`, `Chisq`, `Chi Df`, and `Pr(>Chisq)` (the comparison columns are
+#'   `NA` for the first model).
 #' @export
 #'
 #' @examples
@@ -15,63 +22,101 @@
 #'                      data = dat, model_type = "PH", n_knots = 6)
 #' fit_gh <- fit_genhaz(Surv(dat$time, dat$event), ~X,
 #'                      data = dat, model_type = "GH", n_knots = 6)
-#' LR(fit_ph, fit_gh)
+#' anova(fit_ph, fit_gh)
 #' }
-LR <- function(fit_nested, fit_general) {
-  lr  <- -2 * (-fit_nested$objective + fit_general$objective)
-  pv  <- pchisq(lr, df = fit_general$df - fit_nested$df, lower.tail = FALSE)
-  res <- c(lr, pv)
-  names(res) <- c("LR-statistic", "p_value")
-  res
-}
-
-#' Wald confidence interval for a single parameter
-#'
-#' @param fit A fitted model object from [fit_genhaz()].
-#' @param param Character; name of the parameter (must be in `fit$parnames`).
-#' @param alpha Significance level. Default 0.05 (95 % CI).
-#'
-#' @return Named numeric vector with `lower` and `upper` bounds.
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' waldCI(fit, "beta2_X")
-#' }
-waldCI <- function(fit, param, alpha = 0.05) {
-  if (!(param %in% fit$parnames)) {
-    stop("'", param, "' is not a parameter of the fitted model.")
+anova.genhaz_fit <- function(object, ...) {
+  dots   <- list(...)
+  models <- c(list(object), dots[vapply(dots, inherits, logical(1),
+                                        "genhaz_fit")])
+  if (length(models) < 2L) {
+    stop("anova.genhaz_fit() needs at least two nested 'genhaz_fit' models ",
+         "to compare; term-wise ANOVA for a single model is not available.")
   }
-  z <- qnorm(1 - alpha / 2)
-  lower <- fit$par[param] - z * fit$se[param]
-  upper <- fit$par[param] + z * fit$se[param]
-  c(lower = unname(lower), upper = unname(upper))
+
+  k       <- length(models)
+  df_mod  <- vapply(models, function(m) m$df,        numeric(1))
+  loglik  <- vapply(models, function(m) -m$objective, numeric(1))
+  chisq   <- c(NA_real_, vapply(2:k, function(i)
+                 2 * (models[[i - 1L]]$objective - models[[i]]$objective),
+                 numeric(1)))
+  chi_df  <- c(NA_real_, vapply(2:k, function(i)
+                 models[[i]]$df - models[[i - 1L]]$df, numeric(1)))
+  pval    <- pchisq(chisq, chi_df, lower.tail = FALSE)
+
+  tab <- data.frame(Df = df_mod, LogLik = loglik, Chisq = chisq,
+                    `Chi Df` = chi_df, `Pr(>Chisq)` = pval,
+                    check.names = FALSE)
+  rownames(tab) <- paste("Model", seq_len(k))
+
+  labels <- vapply(models, function(m) {
+    mt <- if (length(unique(m$model_type)) == 1L) unique(m$model_type)
+          else paste(m$model_type, collapse = "/")
+    sprintf("%s, %s", deparse(m$formula), mt)
+  }, character(1))
+  heading <- c("Analysis of Deviance Table (likelihood ratio tests)\n",
+               paste0(" Model ", seq_len(k), ": ", labels))
+
+  structure(tab, heading = heading, class = c("anova", "data.frame"))
 }
 
-#' Wald confidence interval for the difference of two parameters
+#' Wald confidence intervals for model parameters
 #'
-#' Uses the delta method to compute a confidence interval for
-#' `param1 - param2` accounting for their covariance.
+#' Computes Wald confidence intervals for the parameters of a fitted GH model,
+#' following the [stats::confint()] convention. With `diff = TRUE` it instead
+#' returns a delta-method interval for the difference of two parameters,
+#' accounting for their covariance.
 #'
-#' @param fit A fitted model object from [fit_genhaz()].
-#' @param param1 Character; name of the first parameter.
-#' @param param2 Character; name of the second parameter.
-#' @param alpha Significance level. Default 0.05 (95 % CI).
+#' @param object A `"genhaz_fit"` object from [fit_genhaz()].
+#' @param parm Character vector of parameter names (must be in
+#'   `object$parnames`). If missing, all parameters are used. When
+#'   `diff = TRUE`, exactly two names must be supplied.
+#' @param level Confidence level. Default `0.95`.
+#' @param diff Logical. If `TRUE`, return a single interval for
+#'   `parm[1] - parm[2]` via the delta method. Default `FALSE`.
+#' @param ... Currently unused.
 #'
-#' @return Named numeric vector with `lower` and `upper` bounds.
+#' @return A matrix with one row per parameter (or a single row for the
+#'   difference) and two columns giving the lower and upper bounds.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' waldCI_minus(fit, "beta1_X", "beta2_X")
+#' confint(fit)                                       # all parameters
+#' confint(fit, "beta2_X")                            # one parameter
+#' confint(fit, c("beta1_X", "beta2_X"), diff = TRUE) # difference
 #' }
-waldCI_minus <- function(fit, param1, param2, alpha = 0.05) {
-  cov_m <- fit$var[c(param1, param2), c(param1, param2)]
-  var   <- cov_m[1, 1] - 2 * cov_m[1, 2] + cov_m[2, 2]
-  z     <- qnorm(1 - alpha / 2)
-  diff  <- fit$par[param1] - fit$par[param2]
-  c(lower = unname(diff - z * sqrt(var)),
-    upper = unname(diff + z * sqrt(var)))
+confint.genhaz_fit <- function(object, parm, level = 0.95, diff = FALSE, ...) {
+  a   <- (1 - level) / 2
+  z   <- qnorm(1 - a)
+  pct <- paste0(format(100 * c(a, 1 - a), trim = TRUE,
+                       scientific = FALSE, digits = 3), " %")
+
+  if (diff) {
+    if (length(parm) != 2L) {
+      stop("'diff = TRUE' requires exactly two parameter names in 'parm'.")
+    }
+    unknown <- setdiff(parm, object$parnames)
+    if (length(unknown)) {
+      stop("Unknown parameter(s): ", paste(unknown, collapse = ", "), ".")
+    }
+    cov_m <- object$var[parm, parm]
+    v     <- cov_m[1, 1] - 2 * cov_m[1, 2] + cov_m[2, 2]
+    est   <- object$par[parm[1]] - object$par[parm[2]]
+    ci    <- est + c(-1, 1) * z * sqrt(v)
+    return(matrix(ci, nrow = 1L,
+                  dimnames = list(paste(parm, collapse = " - "), pct)))
+  }
+
+  if (missing(parm)) parm <- object$parnames
+  unknown <- setdiff(parm, object$parnames)
+  if (length(unknown)) {
+    stop("Unknown parameter(s): ", paste(unknown, collapse = ", "), ".")
+  }
+  est <- object$par[parm]
+  se  <- object$se[parm]
+  out <- cbind(est - z * se, est + z * se)
+  dimnames(out) <- list(parm, pct)
+  out
 }
 
 #' Pointwise confidence bands for hazard and survival functions
