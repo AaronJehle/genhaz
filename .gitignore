@@ -7,6 +7,7 @@ genhaz.Rcheck/
 # R session files
 .Rhistory
 .RData
+.Rproj.user
 
 # Source files not part of the package
 genhaz/src/*.o

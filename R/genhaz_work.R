@@ -210,14 +210,90 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
                     ncol = ncol(S_penal_wo_intercept) + 1)
   S_penal[-1, -1] <- S_penal_wo_intercept
 
-  B <- function(time_arg, ...) smf_cpp(time_arg, knots = knots, Z = Z, intercept = FALSE, ...)
+  # Restricted-cubic-spline basis (no intercept), projected by Z.
+  # For derivs > 0, smf_cpp() internally computes crs_cpp(derivs = 0) only to read
+  # its knots attribute, then discards that basis and returns
+  # crs_cpp(derivs, intercept = TRUE) %*% Z. We skip that wasted 0th-derivative
+  # pass by calling crs_cpp() directly (it is exported), which is the single
+  # biggest cost in the GH/AFT fit -- the derivative bases are evaluated at the
+  # n * nquad cumulative-hazard quadrature points. The derivs = 0 path keeps
+  # using smf_cpp() (already optimal). Results are identical up to BLAS rounding.
+  B <- function(time_arg, derivs = 0L) {
+    if (derivs == 0L) {
+      smf_cpp(time_arg, knots = knots, Z = Z, intercept = FALSE)
+    } else {
+      unclass(crs_cpp(time_arg, knots = knots, derivs = derivs,
+                      intercept = TRUE)) %*% Z
+    }
+  }
+
+  # --- Basis caching ---------------------------------------------------------
+  # The spline basis B(log(t) + eta1) depends on theta ONLY through eta1, i.e.
+  # only through beta1. During a penalised fit, nlminb evaluates the objective,
+  # gradient and Hessian at the same theta (hence the same beta1), and for
+  # PH / baseline models beta1 is box-constrained so eta1 never changes at all.
+  # We therefore memoise the basis matrices keyed on beta1, recomputing only
+  # when beta1 changes. The fixed (theta-independent) log-time grids and the
+  # quadrature weight vectors are built once here.
+  #
+  # has_time_effect is FALSE when no covariate shifts the log-time scale (pure
+  # PH / baseline). In that case eta1 == 0 and every first/second-derivative
+  # basis enters the gradient and Hessian only multiplied by X1_filtered == 0,
+  # so those basis evaluations can be skipped entirely.
+  has_time_effect <- any(is_not_ph == 1)
+
+  lt_obs_t1  <- log(time + 1e-10)
+  lt_quad_t1 <- log(c(outer(time, quad_scale)) + 1e-10)
+  w_quad_t1  <- c(outer(time, quad_w_half))
+  if (!is.null(time2)) {
+    lt_quad_t2 <- log(c(outer(time2, quad_scale)) + 1e-10)
+    w_quad_t2  <- c(outer(time2, quad_w_half))
+  }
+
+  .bcache <- new.env(parent = emptyenv())
+  .bcache$beta1 <- NULL
+  # Cached basis on a fixed grid. kind = "obs" (basis at time_arg itself) or
+  # "quad" (time_arg expanded over the GL nodes, observation index fastest).
+  # Results are keyed on (kind, grid, derivs) and dropped whenever beta1 moves.
+  # Grids that are neither `time` nor `time2` (not produced by the fit/predict
+  # paths) fall back to a direct, uncached evaluation.
+  cbasis <- function(theta, time_arg, derivs, kind) {
+    beta1 <- theta[nb0 + seq_len(nb1)]
+    if (!identical(beta1, .bcache$beta1)) {
+      .bcache$beta1 <- beta1
+      .bcache$e1    <- eta1(theta)
+      .bcache$store <- new.env(parent = emptyenv())
+    }
+    role <- if (identical(time_arg, time)) {
+      "t1"
+    } else if (!is.null(time2) && identical(time_arg, time2)) {
+      "t2"
+    } else {
+      e1  <- eta1(theta)
+      arg <- if (kind == "obs") log(time_arg + 1e-10) + e1
+             else log(c(outer(time_arg, quad_scale)) + 1e-10) + rep(e1, nquad)
+      return(B(arg, derivs = derivs))
+    }
+    key <- paste0(kind, role, derivs)
+    val <- .bcache$store[[key]]
+    if (!is.null(val)) return(val)
+    e1  <- .bcache$e1
+    arg <- if (kind == "obs") {
+      (if (role == "t1") lt_obs_t1 else log(time2 + 1e-10)) + e1
+    } else {
+      (if (role == "t1") lt_quad_t1 else lt_quad_t2) + rep(e1, nquad)
+    }
+    val <- B(arg, derivs = derivs)
+    .bcache$store[[key]] <- val
+    val
+  }
 
   # Log-time GH model: log h(t|x) = B(log(t) + eta1)^T beta0 + intercept + eta2
   # B(.) is the restricted cubic spline basis evaluated on the shifted log-time scale;
   # theta[1] is the intercept, theta[2:nb0] are the spline coefs.
   log_h <- function(theta, time_arg) {
     beta0 <- theta[2:nb0]
-    drop(B(log(time_arg + 1e-10) + eta1(theta)) %*% beta0 + theta[1] + eta2(theta))
+    drop(cbasis(theta, time_arg, 0L, "obs") %*% beta0 + theta[1] + eta2(theta))
   }
   h_fn <- function(theta, time_arg) exp(log_h(theta, time_arg))
 
@@ -229,7 +305,7 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   # time-varying acceleration factor (see R/generics.R, type = "acc_factor").
   dlogh_dt <- function(theta, time_arg) {
     beta0   <- theta[2:nb0]
-    B_prime <- B(log(time_arg + 1e-10) + eta1(theta), derivs = 1L)
+    B_prime <- cbasis(theta, time_arg, 1L, "obs")
     drop(B_prime %*% beta0) / (time_arg + 1e-10)
   }
   dh_dt <- function(theta, time_arg) {
@@ -253,13 +329,14 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   #   d/d_beta2: X2_filtered
   # Derivs.txt "Derivatives of the log-hazard -- log-time formulation".
   gradient_log_h <- function(theta, time_arg) {
-    beta0  <- theta[2:nb0]
-    e1     <- eta1(theta)
-    Bmat   <- B(log(time_arg + 1e-10) + e1)
-    B_prime <- B(log(time_arg + 1e-10) + e1, derivs = 1)
-    db0    <- Bmat
-    db1    <- drop(B_prime %*% beta0) * X1_filtered + X3_filtered
-    db2    <- X2_filtered
+    beta0 <- theta[2:nb0]
+    db0   <- cbasis(theta, time_arg, 0L, "obs")
+    db1   <- if (has_time_effect) {
+      drop(cbasis(theta, time_arg, 1L, "obs") %*% beta0) * X1_filtered + X3_filtered
+    } else {
+      X3_filtered                       # == 0 when no covariate shifts log-time
+    }
+    db2   <- X2_filtered
     cbind(1, db0, db1, db2)
   }
   gradient_h <- function(theta, time_arg) {
@@ -272,10 +349,10 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   # All other blocks (beta0/beta0, beta0/beta2, beta1/beta2, beta2/beta2) are zero.
   hessian_log_h <- function(theta, time_arg) {
     beta0   <- theta[2:nb0]
-    e1      <- eta1(theta)
-    B_prime  <- B(log(time_arg + 1e-10) + e1, derivs = 1)
-    B_prime2 <- B(log(time_arg + 1e-10) + e1, derivs = 2)
     Hessian  <- array(0, c(length(time_arg), length(theta), length(theta)))
+    if (!has_time_effect) return(Hessian)   # all non-zero blocks vanish
+    B_prime  <- cbasis(theta, time_arg, 1L, "obs")
+    B_prime2 <- cbasis(theta, time_arg, 2L, "obs")
     index0   <- 2:nb0; index1 <- nb0 + 1:nb1
     for (k in seq_len(nb1)) {
       Hessian[, index0, index1[k]] <-
@@ -302,15 +379,15 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   # outer(time, quad_scale) expands all n_obs x nquad evaluation points at once;
   # rowSums collapses back to n_obs values.
   H_fn <- function(theta, time_arg) {
-    n_arg   <- length(time_arg)
-    t_all_q <- c(outer(time_arg, quad_scale))
-    w_mat_q <- outer(time_arg, quad_w_half)
-    beta0   <- theta[2:nb0]
-    eta1_v  <- rep(eta1(theta), nquad)
-    eta2_v  <- rep(eta2(theta), nquad)
-    B_all   <- B(log(t_all_q + 1e-10) + eta1_v)
-    h_all   <- exp(drop(B_all %*% beta0) + theta[1] + eta2_v)
-    rowSums(w_mat_q * matrix(h_all, n_arg, nquad))
+    n_arg  <- length(time_arg)
+    beta0  <- theta[2:nb0]
+    eta2_v <- rep(eta2(theta), nquad)
+    w_q    <- if (identical(time_arg, time)) w_quad_t1
+              else if (!is.null(time2) && identical(time_arg, time2)) w_quad_t2
+              else c(outer(time_arg, quad_w_half))
+    B_all  <- cbasis(theta, time_arg, 0L, "quad")
+    h_all  <- exp(drop(B_all %*% beta0) + theta[1] + eta2_v)
+    rowSums(matrix(w_q * h_all, n_arg, nquad))
   }
 
   # dH/d_theta = integral_0^t d(h(u|x))/d_theta du  (Leibniz / differentiate under integral).
@@ -318,20 +395,30 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   gradient_H <- function(theta, time_arg) {
     n_arg  <- length(time_arg)
     beta0  <- theta[2:nb0]
-    e1     <- eta1(theta)
-    e2     <- eta2(theta)
-    result <- matrix(0, n_arg, length(theta))
-    for (q in seq_len(nquad)) {
-      ti     <- time_arg * quad_scale[q]
-      wi     <- time_arg * quad_w_half[q]
-      log_te <- log(ti + 1e-10) + e1
-      Bi     <- B(log_te)
-      Bpi    <- B(log_te, derivs = 1L)
-      whi    <- wi * exp(drop(Bi %*% beta0) + theta[1] + e2)
-      result <- result + whi * cbind(1, Bi,
-                                     drop(Bpi %*% beta0) * X1_filtered + X3_filtered,
-                                     X2_filtered)
+    eta2_v <- rep(eta2(theta), nquad)
+    if (identical(time_arg, time)) {
+      w_q <- w_quad_t1; X1f <- X1f_quad; X2f <- X2f_quad; X3f <- X3f_quad
+    } else if (!is.null(time2) && identical(time_arg, time2)) {
+      w_q <- w_quad_t2; X1f <- X1f_quad; X2f <- X2f_quad; X3f <- X3f_quad
+    } else {
+      w_q <- c(outer(time_arg, quad_w_half))
+      ri  <- rep(seq_len(n_arg), nquad)
+      X1f <- X1_filtered[ri, , drop = FALSE]
+      X2f <- X2_filtered[ri, , drop = FALSE]
+      X3f <- X3_filtered[ri, , drop = FALSE]
     }
+    B_all <- cbasis(theta, time_arg, 0L, "quad")
+    wh    <- w_q * exp(drop(B_all %*% beta0) + theta[1] + eta2_v)
+    db1   <- if (has_time_effect) {
+      drop(cbasis(theta, time_arg, 1L, "quad") %*% beta0) * X1f + X3f
+    } else {
+      X3f
+    }
+    wint  <- wh * cbind(1, B_all, db1, X2f)
+    # Sum the nquad blocks (observation index fastest) back to one row per obs.
+    result <- wint[seq_len(n_arg), , drop = FALSE]
+    for (q in seq_len(nquad)[-1L])
+      result <- result + wint[((q - 1L) * n_arg + 1L):(q * n_arg), , drop = FALSE]
     result
   }
 
@@ -340,15 +427,14 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   hessian_H <- function(theta, time_arg) {
     n_arg   <- length(time_arg)
     N_q     <- n_arg * nquad
-    t_all_q <- c(outer(time_arg, quad_scale))
-    w_all_q <- c(outer(time_arg, quad_w_half))
+    w_all_q <- if (identical(time_arg, time)) w_quad_t1
+               else if (!is.null(time2) && identical(time_arg, time2)) w_quad_t2
+               else c(outer(time_arg, quad_w_half))
     beta0   <- theta[2:nb0]
-    eta1_v  <- rep(eta1(theta), nquad)
     eta2_v  <- rep(eta2(theta), nquad)
-    log_te  <- log(t_all_q + 1e-10) + eta1_v
-    B_all   <- B(log_te)
-    Bp_all  <- B(log_te, derivs = 1)
-    Bp2_all <- B(log_te, derivs = 2)
+    B_all   <- cbasis(theta, time_arg, 0L, "quad")
+    Bp_all  <- cbasis(theta, time_arg, 1L, "quad")
+    Bp2_all <- cbasis(theta, time_arg, 2L, "quad")
     h_all   <- exp(drop(B_all %*% beta0) + theta[1] + eta2_v)
     if (n_arg == n_obs) {
       X1f_q <- X1f_quad; X2f_q <- X2f_quad; X3f_q <- X3f_quad
@@ -386,31 +472,38 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   hessian_H_sum <- function(theta, time_arg) {
     n_arg  <- length(time_arg)
     beta0  <- theta[2:nb0]
-    e1     <- eta1(theta)
-    e2     <- eta2(theta)
+    eta2_v <- rep(eta2(theta), nquad)
     p      <- length(theta)
     index0 <- 2:nb0; index1 <- nb0 + seq_len(nb1)
-    result <- matrix(0, p, p)
-    for (q in seq_len(nquad)) {
-      ti      <- time_arg * quad_scale[q]
-      wi      <- time_arg * quad_w_half[q]
-      log_te  <- log(ti + 1e-10) + e1
-      Bi      <- B(log_te)
-      Bpi     <- B(log_te, derivs = 1L)
-      Bp2i    <- B(log_te, derivs = 2L)
-      whi     <- wi * exp(drop(Bi %*% beta0) + theta[1] + e2)
-      Bp_b0i  <- drop(Bpi %*% beta0)
-      Bp2_b0i <- drop(Bp2i %*% beta0)
-      glhi    <- cbind(1, Bi, Bp_b0i * X1_filtered + X3_filtered, X2_filtered)
-      result  <- result + crossprod(sqrt(whi) * glhi)
-      for (k in seq_len(nb1)) {
-        v <- colSums(Bpi * (whi * X1_filtered[, k]))
-        result[index0, index1[k]] <- result[index0, index1[k]] + v
-        result[index1[k], index0] <- result[index1[k], index0] + v
-        result[index1, index1[k]] <- result[index1, index1[k]] +
-          colSums(X1_filtered * (whi * Bp2_b0i * X1_filtered[, k]))
-      }
+    if (identical(time_arg, time)) {
+      w_q <- w_quad_t1; X1f <- X1f_quad; X2f <- X2f_quad; X3f <- X3f_quad
+    } else if (!is.null(time2) && identical(time_arg, time2)) {
+      w_q <- w_quad_t2; X1f <- X1f_quad; X2f <- X2f_quad; X3f <- X3f_quad
+    } else {
+      w_q <- c(outer(time_arg, quad_w_half))
+      ri  <- rep(seq_len(n_arg), nquad)
+      X1f <- X1_filtered[ri, , drop = FALSE]
+      X2f <- X2_filtered[ri, , drop = FALSE]
+      X3f <- X3_filtered[ri, , drop = FALSE]
     }
+    B_all <- cbasis(theta, time_arg, 0L, "quad")
+    wh    <- w_q * exp(drop(B_all %*% beta0) + theta[1] + eta2_v)
+    if (!has_time_effect) {
+      # X1_filtered == 0: the d2(log h) blocks vanish and the beta1 columns of
+      # the score are zero, so only the score outer-product remains.
+      return(crossprod(sqrt(wh) * cbind(1, B_all, X3f, X2f)))
+    }
+    Bp_all  <- cbasis(theta, time_arg, 1L, "quad")
+    Bp2_all <- cbasis(theta, time_arg, 2L, "quad")
+    glh     <- cbind(1, B_all, drop(Bp_all %*% beta0) * X1f + X3f, X2f)
+    # Score outer-product summed over all observations and quadrature points.
+    result  <- crossprod(sqrt(wh) * glh)
+    # d2(log h) contributions, summed the same way (crossprod over N_q rows).
+    blk01   <- crossprod(Bp_all, wh * X1f)                       # (nb0-1) x nb1
+    result[index0, index1] <- result[index0, index1] + blk01
+    result[index1, index0] <- result[index1, index0] + t(blk01)
+    result[index1, index1] <- result[index1, index1] +
+      crossprod(X1f, (wh * drop(Bp2_all %*% beta0)) * X1f)
     result
   }
 
@@ -488,23 +581,25 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     }
     if (cens_type %in% c("rc", "lt_rc")) {
       d2H_sum <- hessian_H_sum(theta, time_arg)
-      beta0   <- theta[2:nb0]
-      log_te  <- log(time_arg + 1e-10) + eta1(theta)
-      Bp_obs  <- B(log_te, derivs = 1L)
-      Bp2_obs <- B(log_te, derivs = 2L)
-      Bp2_b0  <- drop(Bp2_obs %*% beta0)
       d2lh_ev <- matrix(0, p, p)
-      for (k in seq_len(nb1)) {
-        v <- colSums(Bp_obs * (event * X1_filtered[, k]))
-        d2lh_ev[index0, index1[k]] <- d2lh_ev[index1[k], index0] <- v
-        d2lh_ev[index1, index1[k]] <-
-          colSums(X1_filtered * (event * Bp2_b0 * X1_filtered[, k]))
+      if (has_time_effect) {
+        beta0   <- theta[2:nb0]
+        Bp_obs  <- cbasis(theta, time_arg, 1L, "obs")
+        Bp2_obs <- cbasis(theta, time_arg, 2L, "obs")
+        blk01   <- crossprod(Bp_obs, event * X1_filtered)         # (nb0-1) x nb1
+        d2lh_ev[index0, index1] <- blk01
+        d2lh_ev[index1, index0] <- t(blk01)
+        d2lh_ev[index1, index1] <-
+          crossprod(X1_filtered, (event * drop(Bp2_obs %*% beta0)) * X1_filtered)
       }
       if (cens_type == "rc") return(-d2lh_ev + d2H_sum + penal)
       d2H2_sum <- hessian_H_sum(theta, time2)
       return(-d2lh_ev + d2H_sum - d2H2_sum + penal)
     }
-    # Interval censoring: array-based path
+    # Interval censoring: array-based path. The penalty is added here just as for
+    # rc/lt_rc (negll and gradient_negll already penalise the ic case), so that
+    # the penalised Hessian -- and hence fit$var, edf, LCV and dLCV -- are
+    # consistent across all censoring types.
     d2H  <- hessian_H(theta, time_arg)
     d2H2 <- hessian_H(theta, time2)
     H1   <- H_fn(theta, time_arg)
@@ -524,8 +619,13 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     a    <- array(rep(v, times = p), dim = c(length(time_arg), p, p))
     b    <- aperm(a, c(1, 3, 2))
     dH2_2 <- a * b
+    # With g = S1 - S2, the per-observation negll Hessian is -d^2 log(g)/dtheta^2
+    #   = -g''/g + g' g'^T / g^2 = p2 + p1,
+    # where p2 = -g''/g and p1 = g' g'^T / g^2. (The previous code used
+    # -(p2 - p1), flipping the sign of the second-derivative term p2, which did
+    # not match the finite-difference Hessian of gradient_negll.)
     p2   <- (S1 * d2H - S1 * dH_2 - S2 * d2H2 + S2 * dH2_2) / (S1 - S2)
-    -apply(p2 - p1, 2:3, sum)
+    apply(p1 + p2, 2:3, sum) + penal
   }
 
   # --- res = "H" dispatch (before edf/fit) ---
@@ -541,19 +641,21 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
   # Effective degrees of freedom: edf = tr(H_pen^{-1} * H_unpen) - #{constrained params}.
   # modvec adds 1 on diagonal for constrained params (beta1=0 for PH; beta2=0 for AFT/AH)
   # so H_pen + diag(modvec) stays invertible; those positions contribute 0 to the trace.
+  # Only the unpenalised Hessian is evaluated; the penalised one differs from it
+  # by exactly lambda * S (the penalty touches the nb0 block only and is now applied
+  # for every censoring type), so H_pen = H_upen + lambda * S_full -- no second
+  # Hessian evaluation needed.
   edf_fn <- function(theta_lambda, roh) {
     modvec <- c(rep(0, nb0), is_ph, is_aft + is_ah)
     tryCatch({
-      H_pen  <- genhaz_work(theta = theta_lambda, time = time, X = X,
-                            knots = knots, Z = Z, event = event,
-                            lambda = exp(roh), cens_type = cens_type,
-                            model_type = model_type, time2 = time2,
-                            res = "hessian_negll", control = control)
       H_upen <- genhaz_work(theta = theta_lambda, time = time, X = X,
                             knots = knots, Z = Z, event = event,
                             lambda = exp(roh), cens_type = cens_type,
                             model_type = model_type, time2 = time2,
                             res = "hessian_negll_upen", control = control)
+      S_full <- matrix(0, length(theta_lambda), length(theta_lambda))
+      S_full[seq_len(nb0), seq_len(nb0)] <- S_penal
+      H_pen  <- H_upen + exp(roh) * S_full
       sum(diag(solve(H_pen + diag(modvec)) %*% H_upen)) - sum(is_not_gh)
     }, error = function(e) {
       message("Error computing edf for roh = ", roh, ": ", conditionMessage(e))
@@ -794,7 +896,20 @@ genhaz_work <- function(theta, time, X, knots, Z, event = NULL, lambda = 1,
     fit$Z        <- Z
     fit$S        <- S_penal
     fit$negll    <- fit$objective
-    fit$edf      <- edf_fn(fit$par, log(lambda))
+    # edf = tr(H_pen^{-1} H_upen) - #{constrained}. Reuse the Hessian and its
+    # (penalised) inverse already computed above instead of re-evaluating the
+    # Hessian twice via edf_fn(): H_pen = -fit$hessian, H_upen = H_pen - lambda*S,
+    # and solve(H_pen + diag(modvec)) == h_pen_inv + diag(modvec).
+    if (anyNA(h_pen_inv)) {
+      fit$edf <- Inf
+    } else {
+      # H_pen = -fit$hessian; H_upen = H_pen - lambda*S (the penalty is now applied
+      # for every censoring type). solve(H_pen + diag(modvec)) == h_pen_inv + diag(modvec).
+      S_full <- matrix(0, length(theta), length(theta))
+      S_full[seq_len(nb0), seq_len(nb0)] <- S_penal
+      H_upen  <- -fit$hessian - lambda * S_full
+      fit$edf <- sum(diag((h_pen_inv + diag(modvec)) %*% H_upen)) - sum(is_not_gh)
+    }
     fit$lambda   <- lambda
     fit$penalty  <- (lambda / 2) * t(fit$par[1:nb0]) %*% S_penal %*% fit$par[1:nb0]
     fit$unpen_negll <- fit$negll - as.numeric(fit$penalty)

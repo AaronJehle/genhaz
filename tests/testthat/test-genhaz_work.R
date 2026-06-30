@@ -135,6 +135,60 @@ test_that("hessian_negll passes finite-difference check", {
   expect_lt(max(abs(H_ana - H_fd)), 1e-3)
 })
 
+# Guards the array-based interval-censoring Hessian path (and its penalty),
+# which is exercised by neither rc nor lt_rc.
+test_that("hessian_negll passes finite-difference check (interval censoring)", {
+  n_chk  <- 8
+  t_chk  <- .sim_dat$time[seq_len(n_chk)]
+  t2_chk <- t_chk + 0.5                       # right interval endpoint > t1
+  X_chk  <- .X_mat[seq_len(n_chk), , drop = FALSE]
+  ev_chk <- .sim_dat$event[seq_len(n_chk)]
+  eps    <- 1e-5
+
+  H_ana <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z, event = ev_chk,
+                       lambda = 1, res = "hessian_negll", model_type = "GH",
+                       cens_type = "ic", time2 = t2_chk)
+  H_fd  <- matrix(0, length(.theta0), length(.theta0))
+  for (j in seq_along(.theta0)) {
+    tp <- tm <- .theta0
+    tp[j] <- .theta0[j] + eps; tm[j] <- .theta0[j] - eps
+    gp <- genhaz_work(tp, t_chk, X_chk, .knots, .Z, event = ev_chk, lambda = 1,
+                      res = "gradient_negll", model_type = "GH",
+                      cens_type = "ic", time2 = t2_chk)
+    gm <- genhaz_work(tm, t_chk, X_chk, .knots, .Z, event = ev_chk, lambda = 1,
+                      res = "gradient_negll", model_type = "GH",
+                      cens_type = "ic", time2 = t2_chk)
+    H_fd[j, ] <- (gp - gm) / (2 * eps)
+  }
+  expect_lt(max(abs(H_ana - H_fd)), 1e-3)
+})
+
+test_that("hessian_negll passes finite-difference check (left truncation)", {
+  n_chk  <- 8
+  t_chk  <- .sim_dat$time[seq_len(n_chk)]
+  t2_chk <- pmax(t_chk - 0.3, 1e-3)           # truncation time < t
+  X_chk  <- .X_mat[seq_len(n_chk), , drop = FALSE]
+  ev_chk <- .sim_dat$event[seq_len(n_chk)]
+  eps    <- 1e-5
+
+  H_ana <- genhaz_work(.theta0, t_chk, X_chk, .knots, .Z, event = ev_chk,
+                       lambda = 1, res = "hessian_negll", model_type = "GH",
+                       cens_type = "lt_rc", time2 = t2_chk)
+  H_fd  <- matrix(0, length(.theta0), length(.theta0))
+  for (j in seq_along(.theta0)) {
+    tp <- tm <- .theta0
+    tp[j] <- .theta0[j] + eps; tm[j] <- .theta0[j] - eps
+    gp <- genhaz_work(tp, t_chk, X_chk, .knots, .Z, event = ev_chk, lambda = 1,
+                      res = "gradient_negll", model_type = "GH",
+                      cens_type = "lt_rc", time2 = t2_chk)
+    gm <- genhaz_work(tm, t_chk, X_chk, .knots, .Z, event = ev_chk, lambda = 1,
+                      res = "gradient_negll", model_type = "GH",
+                      cens_type = "lt_rc", time2 = t2_chk)
+    H_fd[j, ] <- (gp - gm) / (2 * eps)
+  }
+  expect_lt(max(abs(H_ana - H_fd)), 1e-3)
+})
+
 test_that("dLCV_full passes finite difference check", {
   t_chk  <- .sim_dat$time
   X_chk  <- .X_mat[, , drop = FALSE]
